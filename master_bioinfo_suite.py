@@ -32,7 +32,16 @@ class MasterBioinfoPipeline:
         self.out_dir = os.path.abspath(out_dir)
         if not os.path.exists(self.out_dir): 
             os.makedirs(self.out_dir)
+        
+        # Initialize attributes to prevent lint errors
         self.report_images = []
+        self.counts = None
+        self.metadata = None
+        self.log_cpm = None
+        self.res_df = None
+        self.wgcna_modules = None
+        self.top_gene = "None"
+        
         print(f"[*] Grand Master Pipeline Initialized in: {self.out_dir}")
 
     def _save_fig(self, name, title, caption):
