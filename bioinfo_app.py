@@ -90,11 +90,23 @@ st.markdown("""
     """, unsafe_allow_html=True)
 
 def main():
+    # Utility to load local logo as base64
+    def get_base64_logo(path):
+        import base64
+        import os
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                return base64.b64encode(f.read()).decode()
+        return ""
+
+    b64_logo = get_base64_logo("app_logo.png")
+    logo_src = f"data:image/png;base64,{b64_logo}" if b64_logo else "https://img.icons8.com/3d-fluency/200/dna.png"
+
     # Sidebar Credits & Branding
-    st.sidebar.markdown("""
+    st.sidebar.markdown(f"""
         <div style="text-align: center; padding: 20px;">
-            <img src="https://img.icons8.com/3d-fluency/200/dna.png" width="100">
-            <h2 style='background: linear-gradient(135deg, #FFD700 0%, #B8860B 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;'>Grand Master</h2>
+            <img src="{logo_src}" width="120" style="border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+            <h2 style='background: linear-gradient(135deg, #FFD700 0%, #B8860B 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-top: 10px;'>Grand Master</h2>
             <p style='font-size: 0.9rem; color: #DAA520; font-weight: bold;'>Elite Edition | v2.5.0 Gold</p>
         </div>
     """, unsafe_allow_html=True)
