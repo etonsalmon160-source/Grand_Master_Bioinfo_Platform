@@ -107,6 +107,64 @@ def main():
     *Bioinformatics workflow automation expert.*
     """)
     
+    # --- GITHUB OAUTH LOGIN ---
+    import requests
+    
+    CLIENT_ID = st.secrets.get("GITHUB_CLIENT_ID")
+    CLIENT_SECRET = st.secrets.get("GITHUB_CLIENT_SECRET")
+    REDIRECT_URI = "https://grandmasterbioinfoplatform-dkdxqpknwocwqjskiwfwpn.streamlit.app/"
+
+    if "user_info" not in st.session_state:
+        st.session_state.user_info = None
+
+    def get_login_url():
+        return f"https://github.com/login/oauth/authorize?client_id={CLIENT_ID}&redirect_uri={REDIRECT_URI}&scope=read:user"
+
+    # Check for callback code in URL
+    query_params = st.query_params
+    if "code" in query_params and st.session_state.user_info is None:
+        code = query_params["code"]
+        # Exchange code for token
+        token_res = requests.post(
+            "https://github.com/login/oauth/access_token",
+            data={"client_id": CLIENT_ID, "client_secret": CLIENT_SECRET, "code": code, "redirect_uri": REDIRECT_URI},
+            headers={"Accept": "application/json"}
+        ).json()
+        
+        if "access_token" in token_res:
+            access_token = token_res["access_token"]
+            # Get User Info
+            user_data = requests.get(
+                "https://api.github.com/user",
+                headers={"Authorization": f"token {access_token}"}
+            ).json()
+            st.session_state.user_info = user_data
+            st.query_params.clear()
+            st.rerun()
+
+    # Sidebar Login UI
+    st.sidebar.markdown("---")
+    if st.session_state.user_info:
+        u = st.session_state.user_info
+        cols = st.sidebar.columns([1, 4])
+        cols[0].image(u.get("avatar_url"), width=40)
+        cols[1].markdown(f"**欢迎, {u.get('login')}**")
+        if st.sidebar.button("登出 (Logout)"):
+            st.session_state.user_info = None
+            st.rerun()
+    else:
+        if CLIENT_ID and CLIENT_SECRET:
+            st.sidebar.markdown(f'<a href="{get_login_url()}" target="_self" class="login-btn" style="text-decoration:none;">🚀 GitHub 账号登录</a>', unsafe_allow_html=True)
+            st.sidebar.caption("登录后可解锁实验记录同步")
+        else:
+            st.sidebar.warning("⚠️ GitHub API 未配置")
+            with st.sidebar.expander("如何配置?"):
+                st.markdown("""
+                1. 在 GitHub Settings 创建 OAuth App。
+                2. 设置 Callback 为当前网址。
+                3. 在 Streamlit Cloud 的 Secrets 中填入 ID 和 Secret。
+                """)
+
     st.sidebar.markdown("---")
     
     # Main Hero Section
