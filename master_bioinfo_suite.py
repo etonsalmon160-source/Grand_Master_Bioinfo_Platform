@@ -134,8 +134,8 @@ class MasterBioinfoPipeline:
         plt.title("Sample Identity (PCA)")
         self._save_fig("Fig1_PCA", "PCA Dimension Reduction", "Unsupervised clustering showing clear separation between Healthy and Cancer groups.")
 
-    def run_dea(self):
-        print("[2/8] Differential Expression Analysis (DEA)...")
+    def run_dea(self, p_thresh=0.05, fc_thresh=1.0, p_type='padj'):
+        print(f"[2/8] Differential Expression Analysis (DEA) [Thresh: {p_type} < {p_thresh}, |log2FC| > {fc_thresh}]...")
         cancer = self.metadata[self.metadata['Group']=='Cancer'].index
         healthy = self.metadata[self.metadata['Group']=='Healthy'].index
         
@@ -148,19 +148,41 @@ class MasterBioinfoPipeline:
         self.res_df = pd.DataFrame(res).set_index('Gene')
         self.res_df['padj'] = multipletests(self.res_df['pvalue'], method='fdr_bh')[1]
         
+        # Sig filtering based on dynamic parameters
         plt.figure(figsize=(6, 6))
         self.res_df['Sig'] = 'NS'
-        self.res_df.loc[(self.res_df['log2FC'] > 1) & (self.res_df['padj'] < 0.05), 'Sig'] = 'Up'
-        self.res_df.loc[(self.res_df['log2FC'] < -1) & (self.res_df['padj'] < 0.05), 'Sig'] = 'Down'
-        sns.scatterplot(data=self.res_df, x='log2FC', y=-np.log10(self.res_df['padj']), hue='Sig', palette={'Up':'red','Down':'blue','NS':'grey'}, s=10, alpha=0.5)
-        plt.title("Differential Gene Expression")
-        self._save_fig("Fig2_Volcano", "Volcano Plot", "Global gene expression changes. Red/Blue dots represent significantly dysregulated genes.")
+        p_col = p_type # either 'pvalue' or 'padj'
+        
+        self.res_df.loc[(self.res_df['log2FC'] > fc_thresh) & (self.res_df[p_col] < p_thresh), 'Sig'] = 'Up'
+        self.res_df.loc[(self.res_df['log2FC'] < -fc_thresh) & (self.res_df[p_col] < p_thresh), 'Sig'] = 'Down'
+        
+        sns.scatterplot(data=self.res_df, x='log2FC', y=-np.log10(self.res_df[p_col]), hue='Sig', 
+                        palette={'Up':'red','Down':'blue','NS':'grey'}, s=15, alpha=0.6)
+        
+        plt.axhline(-np.log10(p_thresh), color='black', linestyle='--', alpha=0.5)
+        plt.axvline(fc_thresh, color='black', linestyle='--', alpha=0.5)
+        plt.axvline(-fc_thresh, color='black', linestyle='--', alpha=0.5)
+        
+        plt.title(f"DEA Volcano Filtered ({p_type.upper()})")
+        plt.xlabel("log2(Fold Change)")
+        plt.ylabel(f"-log10({p_type.upper()})")
+        self._save_fig("Fig2_Volcano", "Volcano Plot", f"Differential analysis with dynamic thresholds: {p_type} < {p_thresh} and |log2FC| > {fc_thresh}.")
+        
+        # Store for downstream
+        self.sig_genes = self.res_df[self.res_df['Sig'] != 'NS'].index.tolist()
+        print(f"  [*] Detected {len(self.sig_genes)} significant genes.")
 
     def run_wgcna_lite(self):
-        print("[3/8] WGCNA: Gene Co-expression Network Analysis...")
-        # Select top 500 variable genes for speed
-        top_var = self.log_cpm.var(axis=1).sort_values(ascending=False).head(500).index
-        mat = self.log_cpm.loc[top_var].T
+        print(f"[3/8] WGCNA: Gene Co-expression Network Analysis...")
+        # Prioritize sig_genes, fallback to top variance
+        if hasattr(self, 'sig_genes') and len(self.sig_genes) >= 20:
+            target_genes = self.sig_genes[:1000] # Cap at 1000 for lite version
+            print(f"  [*] Using {len(target_genes)} Significant Genes for WGCNA.")
+        else:
+            target_genes = self.log_cpm.var(axis=1).sort_values(ascending=False).head(500).index
+            print(f"  [*] No sufficient DEGs found. Using top 500 variable genes.")
+            
+        mat = self.log_cpm.loc[target_genes].T
         
         # Correlation-based clustering (Power = 6 simulation)
         corr = mat.corr()
@@ -200,7 +222,14 @@ class MasterBioinfoPipeline:
         from sklearn.linear_model import LassoCV
         from sklearn.metrics import roc_curve, auc
         
-        X = self.log_cpm.T
+        # Scientific Screening: Use sig_genes for ML to ensure relevance and speed
+        if hasattr(self, 'sig_genes') and len(self.sig_genes) >= 5:
+            target_genes = self.sig_genes
+        else:
+            target_genes = self.log_cpm.var(axis=1).sort_values(ascending=False).head(2000).index
+            
+        print(f"  [*] Screening identified {len(target_genes)} genes for ML modeling.")
+        X = self.log_cpm.loc[target_genes].T
         y = (self.metadata['Group'] == 'Cancer').astype(int)
         
         # --- Method 1: LASSO Regression ---

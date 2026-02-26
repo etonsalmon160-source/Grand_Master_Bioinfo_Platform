@@ -302,8 +302,12 @@ def main():
                 st.caption("Automatic fetching from NCBI Portal")
         st.markdown("</div>", unsafe_allow_html=True)
 
-    st.sidebar.subheader("分析参数 (Parameters)")
-    n_genes = st.sidebar.slider("基因筛选数量", 500, 10000, 3000)
+    st.sidebar.subheader("🔬 科学筛选 (Screening)")
+    p_type = st.sidebar.selectbox("显著性指标 (P-type)", ["FDR (padj)", "P-value"], index=0)
+    p_thresh = st.sidebar.slider("显著性阈值 (P-thresh)", 0.001, 0.1, 0.05, format="%.3f")
+    fc_thresh = st.sidebar.slider("差异倍数阈值 (log2FC)", 0.5, 5.0, 1.0, step=0.1)
+    
+    p_col_name = 'padj' if 'FDR' in p_type else 'pvalue'
     use_demo = st.sidebar.checkbox("使用演示数据 (Demo Data)")
 
     if st.button("🚀 开启全流程分析 (Execute Grand Master Flow)"):
@@ -342,13 +346,13 @@ def main():
                     st.error(f"数据读取失败: {str(e)}")
                     st.stop()
             
-            pipeline.run_pre_processing(n_genes=n_genes, 
+            pipeline.run_pre_processing(n_genes=3000 if not geo_id and not use_demo else 5000, 
                                      custom_counts=custom_counts, 
                                      custom_meta=custom_meta)
             progress_bar.progress(20)
             
             msg_container.info("📊 正在探测样本差异 (DEA)...")
-            pipeline.run_dea()
+            pipeline.run_dea(p_thresh=p_thresh, fc_thresh=fc_thresh, p_type=p_col_name)
             progress_bar.progress(40)
             
             msg_container.info("🕸️ 正在构建共表达网络 (WGCNA)...")
