@@ -114,12 +114,16 @@ def main():
     st.markdown("### 🔬 一站式自动化生信挖掘平台 (Elite Edition)")
     st.markdown("---")
     
-    with st.expander("📖 如何使用 (How to reuse)", expanded=False):
-        st.info("""
-        1. **上传数据**: 同时上传您的表达矩阵 (Counts) 和临床信息 (Metadata)。
-        2. **启动引擎**: 点击 '开始全球分析'。
-        3. **获取报告**: 分析完成后，直接在页面查看交互式结果并下载完整 Markdown 报告。
-        """)
+    # Global Navigation Tabs
+    nav_tabs = st.tabs(["🚀 分析中心 (Analysis)", "💬 讨论广场 (Forum)", "📚 帮助指南 (Help)"])
+    
+    with nav_tabs[0]:
+        with st.expander("📖 如何使用 (Quick Start)", expanded=False):
+            st.info("""
+            1. **输入数据**: 上传您的 CSV/TXT 矩阵，或直接输入 **NCBI GEO 编号**。
+            2. **配置参数**: 在左侧面板调整基因筛选量与筛选开关。
+            3. **启动引擎**: 点击下方蓝色按钮，等待全自动化流程跑完。
+            """)
 
     col1, col2, col3 = st.columns(3)
     
@@ -224,15 +228,15 @@ def main():
             st.divider()
             st.success(f"核心标志物锁定: {pipeline.top_gene}")
             
-            tabs = st.tabs(["核心概览", "机器学习", "功能富集", "免疫浸润", "讨论广场", "生信报告"])
+            res_tabs = st.tabs(["核心概览", "机器学习", "功能富集", "免疫浸润", "生信报告"])
             
-            with tabs[0]:
+            with res_tabs[0]:
                 c1, c2 = st.columns(2)
                 with c1: st.image("Web_Analysis_Output/Fig1_PCA.png", caption="样本聚类视角")
                 with c2: st.image("Web_Analysis_Output/Fig2_Volcano.png", caption="差异表达地图")
                 st.image("Web_Analysis_Output/Fig6_Survival.png", caption="临床预后验证", width=600)
 
-            with tabs[1]:
+            with res_tabs[1]:
                 # Dynamic check for ML files
                 files = os.listdir("Web_Analysis_Output")
                 if "Fig5d_ROC.png" in files:
@@ -243,47 +247,53 @@ def main():
                 else:
                     st.image("Web_Analysis_Output/Fig5_ML.png")
 
-            with tabs[2]:
+            with res_tabs[2]:
                 st.image("Web_Analysis_Output/Fig7_Enrichment.png", caption="KEGG Pathway Enrichment Analysis")
                 st.info("💡 提示: 气泡大小代表基因计数，颜色代表显著性水平 (-log10 P-value).")
 
-            with tabs[3]:
+            with res_tabs[3]:
                 st.image("Web_Analysis_Output/Fig3_WGCNA.png", caption="WGCNA 调控模块")
                 st.image("Web_Analysis_Output/Fig4_CIBERSORT.png", caption="免疫细胞含量全景")
 
-            with tabs[4]:
-                st.markdown("### 🧬 Grand Master 社区讨论广场")
-                st.write("欢迎在下方分享您的发现、报错或算法改进建议。需登录 GitHub 即可参与讨论。")
-                
-                # Giscus (GitHub Discussions based commenting)
-                # Note: The repo link should point to your repo
-                giscus_html = """
-                <script src="https://giscus.app/client.js"
-                        data-repo="etonsalmon160-source/Grand_Master_Bioinfo_Platform"
-                        data-repo-id="R_kgDONS4oWQ"
-                        data-category="Announcements"
-                        data-category-id="DIC_kwDONS4oWc4Ckk3b"
-                        data-mapping="pathname"
-                        data-strict="0"
-                        data-reactions-enabled="1"
-                        data-emit-metadata="0"
-                        data-input-position="bottom"
-                        data-theme="light"
-                        data-lang="zh-CN"
-                        crossorigin="anonymous"
-                        async>
-                </script>
-                """
-                import streamlit.components.v1 as components
-                components.html(giscus_html, height=800, scrolling=True)
-
-            with tabs[5]:
+            with res_tabs[4]:
                 with open("Web_Analysis_Output/Analysis_Report.md", "r", encoding='utf-8') as f:
                     report_content = f.read()
                 st.markdown(report_content)
                 st.download_button("📥 下载完整报告与图表打包", 
                                    data=report_content, 
                                    file_name="Master_Bioinfo_Report.md")
+
+    with nav_tabs[1]:
+        st.markdown("### 🧬 Grand Master 社区讨论广场")
+        st.write("欢迎在这里分享您的生信发现、提问或交流心得。")
+        
+        # Giscus (GitHub Discussions based commenting)
+        giscus_html = """
+        <script src="https://giscus.app/client.js"
+                data-repo="etonsalmon160-source/Grand_Master_Bioinfo_Platform"
+                data-repo-id="R_kgDONS4oWQ"
+                data-category="Announcements"
+                data-category-id="DIC_kwDONS4oWc4Ckk3b"
+                data-mapping="pathname"
+                data-strict="0"
+                data-reactions-enabled="1"
+                data-emit-metadata="0"
+                data-input-position="bottom"
+                data-theme="light"
+                data-lang="zh-CN"
+                crossorigin="anonymous"
+                async>
+        </script>
+        """
+        import streamlit.components.v1 as components
+        components.html(giscus_html, height=800, scrolling=True)
+
+    with nav_tabs[2]:
+        st.markdown("### 📚 平台指南与 FAQ")
+        st.markdown("""
+        - **如何导入 GEO?** 在分析中心输入 GSE 开头的编号即可。
+        - **报错了怎么办?** 请在讨论广场贴出您的错误代码，Eto 会第一时间回复。
+        """)
 
     # Professional Footer
     st.markdown(f"""
