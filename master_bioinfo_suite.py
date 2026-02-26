@@ -52,6 +52,37 @@ class MasterBioinfoPipeline:
         # Keep relative path for Markdown report
         self.report_images.append({"path": filename, "title": title, "caption": caption})
 
+    def fetch_geo_data(self, accession):
+        """
+        Download and parse GEO data using GEOparse.
+        """
+        import GEOparse
+        print(f"[*] Attempting to fetch GEO data: {accession}")
+        try:
+            gse = GEOparse.get_GSE(accession, destdir=self.out_dir, silent=True)
+            # Pivot expression data
+            # Typically GEOparse object contains samples in a list
+            # We take the first platform found (GPL)
+            first_gpl = list(gse.gpls.keys())[0]
+            counts = gse.pivot_samples('VALUE')
+            
+            # Extract basic metadata
+            meta_dict = {}
+            for sample_name, sample_obj in gse.gsms.items():
+                meta_dict[sample_name] = sample_obj.metadata
+            
+            # Clean up metadata (simplify characteristics)
+            metadata = pd.DataFrame.from_dict(meta_dict, orient='index')
+            # Look for 'characteristics_ch1' which often contains grouping
+            if 'characteristics_ch1' in metadata.columns:
+                metadata['Group'] = metadata['characteristics_ch1'].apply(lambda x: x[0] if isinstance(x, list) else x)
+            else:
+                metadata['Group'] = 'Unknown'
+                
+            return counts, metadata
+        except Exception as e:
+            raise Exception(f"GEO Download Error: {str(e)}")
+
     def convert_probes_to_symbols(self, df, platform="GPL570"):
         """
         Simulated Probe to Symbol conversion based on common platforms.

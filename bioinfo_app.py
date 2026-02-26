@@ -121,15 +121,20 @@ def main():
         3. **获取报告**: 分析完成后，直接在页面查看交互式结果并下载完整 Markdown 报告。
         """)
 
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     
     with col1:
-        st.subheader("1. 表达数据 (Expression Matrix)")
+        st.subheader("1. 表达数据 (Expression)")
         exp_file = st.file_uploader("支持 .csv, .txt, .tsv", type=["csv", "txt", "tsv"], key="exp")
         
     with col2:
-        st.subheader("2. 临床元数据 (Clinical Metadata)")
-        meta_file = st.file_uploader("需包含 SampleID 和 Group 列", type=["csv", "txt", "tsv"], key="meta")
+        st.subheader("2. 临床元数据 (Metadata)")
+        meta_file = st.file_uploader("需包含 SampleID 和 Group", type=["csv", "txt", "tsv"], key="meta")
+
+    with col3:
+        st.subheader("3. 直接对接 GEO (NCBI)")
+        geo_id = st.text_input("输入 GSE 编号 (例: GSE12345)", placeholder="GSExxxxx")
+        st.caption("输入后将自动下载矩阵与分组信息")
 
     st.sidebar.subheader("分析参数 (Parameters)")
     n_genes = st.sidebar.slider("基因筛选数量", 500, 10000, 3000)
@@ -150,7 +155,15 @@ def main():
             custom_counts = None
             custom_meta = None
             
-            if not use_demo:
+            if geo_id:
+                try:
+                    msg_container.info(f"📡 正在从 NCBI 下载 {geo_id}...")
+                    custom_counts, custom_meta = pipeline.fetch_geo_data(geo_id)
+                    st.success(f"成功获取 {geo_id} 数据！")
+                except Exception as e:
+                    st.error(f"GEO 下载失败: {str(e)}")
+                    st.stop()
+            elif not use_demo:
                 try:
                     # Generic loader for CSV/TXT/TSV
                     sep = ',' if exp_file.name.endswith('.csv') else '\t'
