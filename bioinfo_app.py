@@ -154,7 +154,7 @@ def main():
             st.rerun()
     else:
         if CLIENT_ID and CLIENT_SECRET:
-            st.sidebar.markdown(f'<a href="{get_login_url()}" target="_self" class="login-btn" style="text-decoration:none;">🚀 GitHub 账号登录</a>', unsafe_allow_html=True)
+            st.sidebar.markdown(f'<a href="{get_login_url()}" target="_top" class="login-btn" style="text-decoration:none;">🚀 GitHub 账号登录</a>', unsafe_allow_html=True)
             st.sidebar.caption("登录后可解锁实验记录同步")
         else:
             st.sidebar.warning("⚠️ GitHub API 未配置")
