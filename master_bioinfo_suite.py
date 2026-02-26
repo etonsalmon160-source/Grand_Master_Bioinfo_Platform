@@ -232,6 +232,23 @@ class MasterBioinfoPipeline:
         
         # --- Method 2: Random Forest ---
         print("  [*] Running Random Forest Importance...")
+        # RF Error Rate Analysis (Error vs Trees)
+        rf_eval = RandomForestClassifier(n_estimators=1, warm_start=True, oob_score=True, random_state=42)
+        error_rates = []
+        tree_range = range(10, 201, 10)
+        for n in tree_range:
+            rf_eval.set_params(n_estimators=n)
+            rf_eval.fit(X, y)
+            error_rates.append(1 - rf_eval.oob_score_)
+        
+        plt.figure(figsize=(7, 6))
+        plt.plot(tree_range, error_rates, 'k-', marker='o', markersize=4, label='OOB Error Rate')
+        plt.title("Random Forest Error Rates (Convergence Analysis)")
+        plt.xlabel("Number of Trees")
+        plt.ylabel("OOB Error")
+        plt.grid(True, alpha=0.3)
+        self._save_fig("Fig5c1_RF_Error", "RF Error Convergence", "Out-of-bag error stabilization as trees are added to the forest.")
+
         rf = RandomForestClassifier(n_estimators=100, random_state=42)
         rf.fit(X, y)
         
@@ -243,7 +260,7 @@ class MasterBioinfoPipeline:
         plt.yticks(range(len(imp)), imp.index)
         plt.title("Random Forest: Feature Importance (Gini)")
         plt.xlabel("Mean Decrease Gini")
-        self._save_fig("Fig5c_RF_Imp", "RF Feature Importance", "Ranking of top genes based on their contribution to sample classification.")
+        self._save_fig("Fig5c2_RF_Imp", "RF Feature Importance", "Ranking of top genes based on their contribution to sample classification.")
         
         # --- Combined ROC ---
         plt.figure(figsize=(6, 6))

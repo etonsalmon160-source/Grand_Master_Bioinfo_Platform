@@ -316,8 +316,13 @@ def main():
                 if "Fig5d_ROC.png" in files:
                     st.image("Web_Analysis_Output/Fig5d_ROC.png", caption="多模型效能对比")
                     c3, c4 = st.columns(2)
-                    with c3: st.image("Web_Analysis_Output/Fig5a_Lasso_CV.png")
-                    with c4: st.image("Web_Analysis_Output/Fig5b_Lasso_Path.png")
+                    with c3: st.image("Web_Analysis_Output/Fig5a_Lasso_CV.png", caption="LASSO 系数筛选")
+                    with c4: st.image("Web_Analysis_Output/Fig5b_Lasso_Path.png", caption="LASSO 回归路径")
+                    
+                    # New RF diagnostic plots
+                    c5, c6 = st.columns(2)
+                    with c5: st.image("Web_Analysis_Output/Fig5c1_RF_Error.png", caption="随机森林收敛曲线")
+                    with c6: st.image("Web_Analysis_Output/Fig5c2_RF_Imp.png", caption="特征重要性排列")
                 else:
                     st.image("Web_Analysis_Output/Fig5_ML.png")
 
