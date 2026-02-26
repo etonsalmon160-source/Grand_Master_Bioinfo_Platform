@@ -71,41 +71,40 @@ def main():
         if not use_demo and (exp_file is None or meta_file is None):
             st.error("请先上传数据或选择'使用演示数据'！")
         else:
-            with st.status("🛠️ 生信引擎正在全力运转...", expanded=True) as status:
-                progress_bar = st.progress(0)
-                
-                # Init Pipeline
-                pipeline = MasterBioinfoPipeline(out_dir="Web_Analysis_Output")
-                
-                st.write("🔄 正在加载并预处理数据...")
-                pipeline.run_pre_processing(n_genes=n_genes)
-                progress_bar.progress(20)
-                
-                st.write("📊 正在探测样本差异 (DEA)...")
-                pipeline.run_dea()
-                progress_bar.progress(40)
-                
-                st.write("🕸️ 正在构建共表达网络 (WGCNA)...")
-                pipeline.run_wgcna_lite()
-                progress_bar.progress(60)
-                
-                st.write("💉 正在解析免疫微环境 (CIBERSORT)...")
-                pipeline.run_cibersort_lite()
-                progress_bar.progress(80)
-                
-                st.write("🤖 正在启动双模型机器学习与生存验证...")
-                # Support the upgraded ML if available in the imported class
-                if hasattr(pipeline, 'run_advanced_ml'):
-                    pipeline.run_advanced_ml()
-                else:
-                    pipeline.run_ml_biomarkers()
-                pipeline.run_survival()
-                
-                st.write("📝 正在汇总中英文双语报告...")
-                pipeline.generate_report()
-                progress_bar.progress(100)
-                
-                status.update(label="✅ 分析圆满完成！", state="complete", expanded=False)
+            msg_container = st.empty()
+            progress_bar = st.progress(0)
+            
+            # Init Pipeline
+            pipeline = MasterBioinfoPipeline(out_dir="Web_Analysis_Output")
+            
+            msg_container.info("🔄 正在加载并预处理数据...")
+            pipeline.run_pre_processing(n_genes=n_genes)
+            progress_bar.progress(20)
+            
+            msg_container.info("📊 正在探测样本差异 (DEA)...")
+            pipeline.run_dea()
+            progress_bar.progress(40)
+            
+            msg_container.info("🕸️ 正在构建共表达网络 (WGCNA)...")
+            pipeline.run_wgcna_lite()
+            progress_bar.progress(60)
+            
+            msg_container.info("💉 正在解析免疫微环境 (CIBERSORT)...")
+            pipeline.run_cibersort_lite()
+            progress_bar.progress(80)
+            
+            msg_container.info("🤖 正在启动双模型机器学习与生存验证...")
+            if hasattr(pipeline, 'run_advanced_ml'):
+                pipeline.run_advanced_ml()
+            else:
+                pipeline.run_ml_biomarkers()
+            pipeline.run_survival()
+            
+            msg_container.info("📝 正在汇总中英文双语报告...")
+            pipeline.generate_report()
+            progress_bar.progress(100)
+            
+            msg_container.success("✅ 分析圆满完成！")
 
             # --- DISPLAY RESULTS ---
             st.divider()
