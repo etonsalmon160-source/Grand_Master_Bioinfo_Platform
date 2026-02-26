@@ -154,7 +154,11 @@ def main():
             st.rerun()
     else:
         if CLIENT_ID and CLIENT_SECRET:
-            st.sidebar.markdown(f'<a href="{get_login_url()}" target="_top" class="login-btn" style="text-decoration:none;">🚀 GitHub 账号登录</a>', unsafe_allow_html=True)
+            # Styled version (CSS can sometimes block this in iframes)
+            st.sidebar.markdown(f'<a href="{get_login_url()}" target="_top" style="display:inline-block; background: linear-gradient(135deg, #2ea44f 0%, #22863a 100%); color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: bold; width: 100%; text-align: center; margin-bottom: 10px;">🚀 GitHub 账号登录</a>', unsafe_allow_html=True)
+            
+            # Standard Streamlit fallback (Most compatible)
+            st.sidebar.link_button("💡 登录遇到困难? (备用入口)", get_login_url() if CLIENT_ID else "#", use_container_width=True)
             st.sidebar.caption("登录后可解锁实验记录同步")
         else:
             st.sidebar.warning("⚠️ GitHub API 未配置")
