@@ -134,7 +134,18 @@ def main():
     with col3:
         st.subheader("3. 直接对接 GEO (NCBI)")
         geo_id = st.text_input("输入 GSE 编号 (例: GSE12345)", placeholder="GSExxxxx")
-        st.caption("输入后将自动下载矩阵与分组信息")
+        
+        if geo_id.startswith("GSE"):
+            geo_url = f"https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc={geo_id}"
+            st.markdown(f"🔗 [前往该数据集官网 (Series Page)]({geo_url})")
+            with st.expander("💡 手动下载指南 (Manual Guide)"):
+                st.markdown(f"""
+                - **表达矩阵**: 在页面底部寻找 `Series Matrix File(s)` 下载并解压。
+                - **临床数据**: 在页面底部的 `Samples` 表格或 `Series Matrix` 的头部信息中可以提取。
+                - **提示**: 若云端下载缓慢，建议手动下载后使用左侧【上传】功能。
+                """)
+        else:
+            st.caption("输入后将自动下载矩阵与分组信息")
 
     st.sidebar.subheader("分析参数 (Parameters)")
     n_genes = st.sidebar.slider("基因筛选数量", 500, 10000, 3000)
