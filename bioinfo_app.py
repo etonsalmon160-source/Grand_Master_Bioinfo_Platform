@@ -93,9 +93,9 @@ def main():
     # Sidebar Credits & Branding
     st.sidebar.markdown("""
         <div style="text-align: center; padding: 20px;">
-            <img src="https://img.icons8.com/clouds/200/dna.png" width="80">
-            <h2 style='color: #1a2a6c;'>Bioinfo Pro</h2>
-            <p style='font-size: 0.8rem; color: #666;'>Version 2.5.0 Gold</p>
+            <img src="https://img.icons8.com/3d-fluency/200/dna.png" width="100">
+            <h2 style='background: linear-gradient(135deg, #FFD700 0%, #B8860B 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;'>Grand Master</h2>
+            <p style='font-size: 0.9rem; color: #DAA520; font-weight: bold;'>Elite Edition | v2.5.0 Gold</p>
         </div>
     """, unsafe_allow_html=True)
     
