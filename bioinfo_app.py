@@ -442,18 +442,18 @@ def main():
         
         st.divider()
         
-        # Giscus (GitHub Discussions based commenting) - Premium Dark Theme
-        giscus_html = """
-        <div id="giscus-parent" style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 25px; min-height: 800px;">
+        # Giscus (GitHub Discussions) - PRO VERIFIED SYNC
+        giscus_html = f"""
+        <div id="giscus-parent" style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 25px; min-height: 800px; backdrop-filter: blur(10px);">
             <script src="https://giscus.app/client.js"
                     data-repo="etonsalmon160-source/Grand_Master_Bioinfo_Platform"
-                    data-repo-id="R_kgDONS4oWQ"
-                    data-category="Announcements"
-                    data-category-id="DIC_kwDONS4oWc4Ckk3b"
-                    data-mapping="title"
+                    data-repo-id="R_kgDORZS_Kw"
+                    data-category="General"
+                    data-category-id="DIC_kwDORZS_K84C3P-N"
+                    data-mapping="pathname"
                     data-strict="0"
                     data-reactions-enabled="1"
-                    data-emit-metadata="0"
+                    data-emit-metadata="1"
                     data-input-position="top"
                     data-theme="dark_dimmed"
                     data-lang="zh-CN"
@@ -464,6 +464,8 @@ def main():
         """
         import streamlit.components.v1 as components
         components.html(giscus_html, height=1000, scrolling=True)
+
+
         
         # Enhanced Troubleshooting Section
         with st.expander("🛠️ 论坛无法加载? (Troubleshooting Forum)"):
