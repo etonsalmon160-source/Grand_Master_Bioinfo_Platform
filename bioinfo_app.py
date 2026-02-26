@@ -200,7 +200,7 @@ def main():
             st.divider()
             st.success(f"核心标志物锁定: {pipeline.top_gene}")
             
-            tabs = st.tabs(["核心概览", "机器学习", "功能富集", "免疫浸润", "生信报告"])
+            tabs = st.tabs(["核心概览", "机器学习", "功能富集", "免疫浸润", "讨论广场", "生信报告"])
             
             with tabs[0]:
                 c1, c2 = st.columns(2)
@@ -228,6 +228,32 @@ def main():
                 st.image("Web_Analysis_Output/Fig4_CIBERSORT.png", caption="免疫细胞含量全景")
 
             with tabs[4]:
+                st.markdown("### 🧬 Grand Master 社区讨论广场")
+                st.write("欢迎在下方分享您的发现、报错或算法改进建议。需登录 GitHub 即可参与讨论。")
+                
+                # Giscus (GitHub Discussions based commenting)
+                # Note: The repo link should point to your repo
+                giscus_html = """
+                <script src="https://giscus.app/client.js"
+                        data-repo="etonsalmon160-source/Grand_Master_Bioinfo_Platform"
+                        data-repo-id="R_kgDONS4oWQ"
+                        data-category="Announcements"
+                        data-category-id="DIC_kwDONS4oWc4Ckk3b"
+                        data-mapping="pathname"
+                        data-strict="0"
+                        data-reactions-enabled="1"
+                        data-emit-metadata="0"
+                        data-input-position="bottom"
+                        data-theme="light"
+                        data-lang="zh-CN"
+                        crossorigin="anonymous"
+                        async>
+                </script>
+                """
+                import streamlit.components.v1 as components
+                components.html(giscus_html, height=800, scrolling=True)
+
+            with tabs[5]:
                 with open("Web_Analysis_Output/Analysis_Report.md", "r", encoding='utf-8') as f:
                     report_content = f.read()
                 st.markdown(report_content)
