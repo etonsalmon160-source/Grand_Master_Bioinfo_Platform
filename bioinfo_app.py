@@ -346,6 +346,18 @@ def main():
         st.markdown("### 🧬 Grand Master 社区讨论广场")
         st.write("欢迎在这里分享您的生信发现、提问或交流心得。")
         
+        # Guide Users to Post
+        st.success("💡 **想发布新帖子?**")
+        st.info("您可以在下方直接评论现有话题，或者点击下方按钮跳转到 GitHub 开启一个新的讨论主题。登录 GitHub 后即可操作！")
+        
+        col_f1, col_f2 = st.columns([1, 1])
+        with col_f1:
+            st.link_button("✍️ 发布新讨论 (前往 GitHub)", "https://github.com/etonsalmon160-source/Grand_Master_Bioinfo_Platform/discussions/new/choose", use_container_width=True)
+        with col_f2:
+            st.link_button("📢 查看所有讨论主题", "https://github.com/etonsalmon160-source/Grand_Master_Bioinfo_Platform/discussions", use_container_width=True)
+        
+        st.divider()
+        
         # Giscus (GitHub Discussions based commenting)
         giscus_html = """
         <script src="https://giscus.app/client.js"
@@ -365,7 +377,7 @@ def main():
         </script>
         """
         import streamlit.components.v1 as components
-        components.html(giscus_html, height=800, scrolling=True)
+        components.html(giscus_html, height=1000, scrolling=True)
 
     with nav_tabs[2]:
         st.markdown("### 📚 平台指南与 FAQ")
