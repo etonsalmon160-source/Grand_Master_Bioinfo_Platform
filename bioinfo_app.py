@@ -6,45 +6,113 @@ import time
 from master_bioinfo_suite import MasterBioinfoPipeline
 
 # ==========================================
-# 💎 PREMIMUM UI CONFIG
+# 💎 PREMIUM UI CONFIG & STYLING
 # ==========================================
 st.set_page_config(
-    page_title="Grand Master Bioinfo Dashboard",
+    page_title="Grand Master Bioinfo Platform",
     page_icon="🧬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# Custom CSS for Premium Look
+# High-End CSS Injection
 st.markdown("""
     <style>
-    .main {
-        background-color: #f8f9fa;
+    /* Import Google Fonts */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    
+    html, body, [class*="css"] {
+        font-family: 'Inter', sans-serif;
     }
-    .stButton>button {
-        width: 100%;
-        border-radius: 5px;
-        height: 3em;
-        background-color: #E64B35;
+
+    /* Main Background */
+    .stApp {
+        background: radial-gradient(circle at top right, #fdfcfb 0%, #e2d1c3 100%);
+    }
+
+    /* Professional Header */
+    .main-header {
+        background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        font-weight: 800;
+        font-size: 3.5rem;
+        margin-bottom: 0px;
+    }
+
+    /* Cards & Containers */
+    div.stButton > button {
+        background: linear-gradient(to right, #FF512F 0%, #DD2476 51%, #FF512F 100%);
+        border: none;
         color: white;
-        font-weight: bold;
-    }
-    .stMetric {
-        background-color: white;
-        padding: 15px;
+        font-weight: 700;
+        text-transform: uppercase;
+        transition: 0.5s;
+        background-size: 200% auto;
+        box-shadow: 0 4px 15px 0 rgba(236, 40, 111, 0.4);
         border-radius: 10px;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        height: 3.5rem;
+    }
+    div.stButton > button:hover {
+        background-position: right center;
+        transform: translateY(-2px);
+    }
+
+    /* Sidebar Styling */
+    section[data-testid="stSidebar"] {
+        background-color: #ffffff99;
+        backdrop-filter: blur(10px);
+        border-right: 1px solid #e0e0e0;
+    }
+
+    /* Metric Styling */
+    [data-testid="stMetricValue"] {
+        color: #b21f1f;
+        font-weight: 700;
+    }
+
+    /* Footer */
+    .footer {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        width: 100%;
+        background-color: #ffffffcc;
+        color: #333;
+        text-align: center;
+        padding: 10px;
+        font-size: 12px;
+        border-top: 1px solid #eee;
+        backdrop-filter: blur(5px);
+        z-index: 100;
     }
     </style>
     """, unsafe_allow_html=True)
 
 def main():
-    st.sidebar.image("https://img.icons8.com/clouds/200/dna.png", width=100)
-    st.sidebar.title("Bioinfo Engine v2.0")
+    # Sidebar Credits & Branding
+    st.sidebar.markdown("""
+        <div style="text-align: center; padding: 20px;">
+            <img src="https://img.icons8.com/clouds/200/dna.png" width="80">
+            <h2 style='color: #1a2a6c;'>Bioinfo Pro</h2>
+            <p style='font-size: 0.8rem; color: #666;'>Version 2.5.0 Gold</p>
+        </div>
+    """, unsafe_allow_html=True)
+    
+    # User Declaration (Side)
+    st.sidebar.info(f"""
+    **🧪 指导与开发声明**  
+    **负责人**: Eto (eto10)  
+    **联系邮箱**: eto10@example.com  
+    *Bioinformatics workflow automation expert.*
+    """)
+    
     st.sidebar.markdown("---")
     
-    st.title("🧪 Grand Master 生信云分析平台")
-    st.markdown("##### CNS 级别的一站式自动化生信分析工作流")
+    # Main Hero Section
+    st.markdown("<h1 class='main-header'>Grand Master</h1>", unsafe_allow_html=True)
+    st.markdown("### 🔬 一站式自动化生信挖掘平台 (Elite Edition)")
+    st.markdown("---")
     
     with st.expander("📖 如何使用 (How to reuse)", expanded=False):
         st.info("""
@@ -160,8 +228,13 @@ def main():
                                    data=report_content, 
                                    file_name="Master_Bioinfo_Report.md")
 
-    st.sidebar.markdown("---")
-    st.sidebar.caption("Powered by OpenClaw AI | 2026")
+    # Professional Footer
+    st.markdown(f"""
+        <div class="footer">
+            <p><strong>Grand Master Bioinfo Platform</strong> | Optimized by <strong>Eto (eto10)</strong> | 📧 eto10@example.com</p>
+            <p style='font-size: 10px; color: #999;'>© 2026 Bioinformatics Automation Suite. All rights reserved.</p>
+        </div>
+    """, unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
