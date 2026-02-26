@@ -8,86 +8,154 @@ from master_bioinfo_suite import MasterBioinfoPipeline
 # ==========================================
 # 💎 PREMIUM UI CONFIG & STYLING
 # ==========================================
+# ==========================================
+# 💎 ULTIMATE PREMIUM UI CONFIG & STYLING (GLASSMORPHISM DARK)
+# ==========================================
 st.set_page_config(
-    page_title="Grand Master Bioinfo Platform",
+    page_title="Grand Master | Elite Bioinfo Portal",
     page_icon="🧬",
     layout="wide",
     initial_sidebar_state="expanded",
 )
 
-# High-End CSS Injection
+# Professional CSS Injection - Advanced Medical/Tech Aesthetic
 st.markdown("""
     <style>
-    /* Import Google Fonts */
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Inter:wght@300;400;500&display=swap');
     
-    html, body, [class*="css"] {
+    :root {
+        --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        --accent-gradient: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+        --glass-bg: rgba(255, 255, 255, 0.05);
+        --glass-border: rgba(255, 255, 255, 0.1);
+        --text-main: #f8fafc;
+        --text-dim: #94a3b8;
+    }
+
+    /* Global Overrides */
+    .stApp {
+        background: radial-gradient(circle at 0% 0%, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        color: var(--text-main);
         font-family: 'Inter', sans-serif;
     }
 
-    /* Main Background */
-    .stApp {
-        background: radial-gradient(circle at top right, #fdfcfb 0%, #e2d1c3 100%);
+    h1, h2, h3, .main-header {
+        font-family: 'Outfit', sans-serif !important;
+        font-weight: 800 !important;
     }
 
-    /* Professional Header */
-    .main-header {
-        background: linear-gradient(135deg, #1a2a6c, #b21f1f, #fdbb2d);
+    /* Hide Streamlit Branding */
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+
+    /* Glassmorphism Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: rgba(15, 23, 42, 0.8) !important;
+        backdrop-filter: blur(20px);
+        border-right: 1px solid var(--glass-border);
+    }
+    
+    [data-testid="stSidebar"] [data-testid="stVerticalBlock"] {
+        padding-top: 2rem;
+    }
+
+    /* Custom Header Style */
+    .super-header {
+        background: linear-gradient(to right, #fff 20%, #94a3b8 100%);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
-        font-weight: 800;
-        font-size: 3.5rem;
-        margin-bottom: 0px;
+        font-size: 4rem !important;
+        letter-spacing: -2px;
+        margin-bottom: 0.5rem;
     }
 
-    /* Cards & Containers */
-    div.stButton > button {
-        background: linear-gradient(to right, #FF512F 0%, #DD2476 51%, #FF512F 100%);
-        border: none;
-        color: white;
-        font-weight: 700;
+    .sub-glow {
+        color: #60a5fa;
+        text-shadow: 0 0 20px rgba(96, 165, 250, 0.5);
+        font-weight: 500;
+        letter-spacing: 2px;
         text-transform: uppercase;
-        transition: 0.5s;
-        background-size: 200% auto;
-        box-shadow: 0 4px 15px 0 rgba(236, 40, 111, 0.4);
+        font-size: 0.8rem;
+    }
+
+    /* Modern Card Container */
+    .premium-card {
+        background: var(--glass-bg);
+        border: 1px solid var(--glass-border);
+        padding: 2rem;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+        margin-bottom: 2rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .premium-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        border-color: rgba(255,255,255,0.2);
+    }
+
+    /* Tab Styling Overrides */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 24px;
+        background-color: transparent;
+    }
+    .stTabs [data-baseweb="tab"] {
+        height: 50px;
+        white-space: pre-wrap;
+        background-color: transparent;
         border-radius: 10px;
-        height: 3.5rem;
+        color: var(--text-dim);
+        font-weight: 600;
+        font-size: 1.1rem;
+        border: none;
+        transition: all 0.2s ease;
+    }
+    .stTabs [aria-selected="true"] {
+        background-color: rgba(255,255,255,0.1) !important;
+        color: #fff !important;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    /* Button Styling (Elite Level) */
+    div.stButton > button {
+        width: 100%;
+        background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+        color: white;
+        border: none;
+        padding: 0.75rem 1.5rem;
+        border-radius: 12px;
+        font-weight: 600;
+        letter-spacing: 0.5px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 10px 20px -10px rgba(59, 130, 246, 0.5);
     }
     div.stButton > button:hover {
-        background-position: right center;
-        transform: translateY(-2px);
+        transform: scale(1.02);
+        box-shadow: 0 20px 30px -10px rgba(59, 130, 246, 0.6);
+        background: linear-gradient(135deg, #60a5fa 0%, #2563eb 100%);
     }
 
-    /* Sidebar Styling */
-    section[data-testid="stSidebar"] {
-        background-color: #ffffff99;
-        backdrop-filter: blur(10px);
-        border-right: 1px solid #e0e0e0;
+    /* Input Fields */
+    .stTextInput input, .stFileUploader section {
+        background-color: rgba(255, 255, 255, 0.03) !important;
+        border: 1px solid var(--glass-border) !important;
+        color: white !important;
+        border-radius: 12px !important;
     }
 
-    /* Metric Styling */
-    [data-testid="stMetricValue"] {
-        color: #b21f1f;
-        font-weight: 700;
-    }
-
-    /* Footer */
-    .footer {
-        position: fixed;
-        left: 0;
-        bottom: 0;
-        width: 100%;
-        background-color: #ffffffcc;
-        color: #333;
+    /* Custom Footer */
+    .glass-footer {
+        padding: 2rem;
         text-align: center;
-        padding: 10px;
-        font-size: 12px;
-        border-top: 1px solid #eee;
-        backdrop-filter: blur(5px);
-        z-index: 100;
+        color: var(--text-dim);
+        font-size: 0.8rem;
+        border-top: 1px solid var(--glass-border);
+        margin-top: 4rem;
     }
     </style>
     """, unsafe_allow_html=True)
+
 
 def main():
     # Utility to load local logo as base64
@@ -102,12 +170,16 @@ def main():
     b64_logo = get_base64_logo("app_logo.png")
     logo_src = f"data:image/png;base64,{b64_logo}" if b64_logo else "https://img.icons8.com/3d-fluency/200/dna.png"
 
-    # Sidebar Credits & Branding
+    # Sidebar Branding (Elite Layout)
     st.sidebar.markdown(f"""
-        <div style="text-align: center; padding: 20px;">
-            <img src="{logo_src}" width="120" style="border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-            <h2 style='background: linear-gradient(135deg, #FFD700 0%, #B8860B 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-top: 10px;'>Grand Master</h2>
-            <p style='font-size: 0.9rem; color: #DAA520; font-weight: bold;'>Elite Edition | v2.5.0 Gold</p>
+        <div style="text-align: center; margin-bottom: 2rem;">
+            <div style="display: inline-block; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid rgba(255,255,255,0.1); margin-bottom: 15px;">
+                <img src="{logo_src}" width="120" style="filter: drop-shadow(0 0 15px rgba(96, 165, 250, 0.4)); filter: brightness(1.1);">
+            </div>
+            <h1 style='font-family: "Outfit", sans-serif; font-size: 2.2rem; margin:0; background: linear-gradient(to bottom, #fff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent;'>Grand Master</h1>
+            <div style='display: inline-block; background: linear-gradient(90deg, #B8860B, #FFD700); padding: 2px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 800; color: #1a1a1a; text-transform: uppercase; letter-spacing: 1px;'>
+                v2.5.0 GOLD ELITE
+            </div>
         </div>
     """, unsafe_allow_html=True)
     
@@ -184,46 +256,51 @@ def main():
     st.sidebar.markdown("---")
     
     # Main Hero Section
-    st.markdown("<h1 class='main-header'>Grand Master</h1>", unsafe_allow_html=True)
-    st.markdown("### 🔬 一站式自动化生信挖掘平台 (Elite Edition)")
-    st.markdown("---")
+    st.markdown("""
+        <div style='margin-bottom: 2rem;'>
+            <div class='sub-glow'>Automated Multi-Omics Intelligence</div>
+            <h1 class='super-header'>Grand Master</h1>
+            <p style='color: var(--text-dim); font-size: 1.2rem; max-width: 600px;'>
+                Elite-level bioinformatics workflow automation. 
+                Integrating deep learning, statistical genetics, and clinical validation.
+            </p>
+        </div>
+    """, unsafe_allow_html=True)
     
     # Global Navigation Tabs
     nav_tabs = st.tabs(["🚀 分析中心 (Analysis)", "💬 讨论广场 (Forum)", "📚 帮助指南 (Help)"])
     
     with nav_tabs[0]:
-        with st.expander("📖 如何使用 (Quick Start)", expanded=False):
+        with st.expander("📖 快速上手指南 (Quick Start)", expanded=False):
             st.info("""
             1. **输入数据**: 上传您的 CSV/TXT 矩阵，或直接输入 **NCBI GEO 编号**。
             2. **配置参数**: 在左侧面板调整基因筛选量与筛选开关。
             3. **启动引擎**: 点击下方蓝色按钮，等待全自动化流程跑完。
             """)
 
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.subheader("1. 表达数据 (Expression)")
-        exp_file = st.file_uploader("支持 .csv, .txt, .tsv", type=["csv", "txt", "tsv"], key="exp")
+        st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
+        st.markdown("### 📊 数据导入 (Data Integration)")
         
-    with col2:
-        st.subheader("2. 临床元数据 (Metadata)")
-        meta_file = st.file_uploader("需包含 SampleID 和 Group", type=["csv", "txt", "tsv"], key="meta")
+        col1, col2, col3 = st.columns(3)
+        
+        with col1:
+            st.markdown("**📁 1. 表达矩阵 (Expression)**")
+            exp_file = st.file_uploader("Upload CSV/TXT/TSV", type=["csv", "txt", "tsv"], key="exp", label_visibility="collapsed")
+            
+        with col2:
+            st.markdown("**📋 2. 临床元数据 (Metadata)**")
+            meta_file = st.file_uploader("Include SampleID & Group", type=["csv", "txt", "tsv"], key="meta", label_visibility="collapsed")
 
-    with col3:
-        st.subheader("3. 直接对接 GEO (NCBI)")
-        geo_id = st.text_input("输入 GSE 编号 (例: GSE12345)", placeholder="GSExxxxx")
-        
-        if geo_id.startswith("GSE"):
-            geo_url = f"https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc={geo_id}"
-            st.markdown(f"🔗 [前往该数据集官网 (Series Page)]({geo_url})")
-            with st.expander("💡 手动下载指南 (Manual Guide)"):
-                st.markdown(f"""
-                - **表达矩阵**: 在页面底部寻找 `Series Matrix File(s)` 下载并解压。
-                - **临床数据**: 在页面底部的 `Samples` 表格或 `Series Matrix` 的头部信息中可以提取。
-                - **提示**: 若云端下载缓慢，建议手动下载后使用左侧【上传】功能。
-                """)
-        else:
-            st.caption("输入后将自动下载矩阵与分组信息")
+        with col3:
+            st.markdown("**🌍 3. 对接 GEO 数据 (NCBI)**")
+            geo_id = st.text_input("GSE Number (e.g., GSE12345)", placeholder="GSExxxxx", label_visibility="collapsed")
+            
+            if geo_id.startswith("GSE"):
+                geo_url = f"https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc={geo_id}"
+                st.markdown(f"🔗 [Series Page]({geo_url})")
+            else:
+                st.caption("Automatic fetching from NCBI Portal")
+        st.markdown("</div>", unsafe_allow_html=True)
 
     st.sidebar.subheader("分析参数 (Parameters)")
     n_genes = st.sidebar.slider("基因筛选数量", 500, 10000, 3000)
@@ -344,14 +421,14 @@ def main():
 
     with nav_tabs[1]:
         st.markdown("""
-            <div style='background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%); padding: 20px; border-radius: 15px; border-left: 5px solid #2ea44f; margin-bottom: 25px;'>
-                <h2 style='margin:0; color: #1a2a6c;'>🧬 Grand Master 社区讨论广场</h2>
-                <p style='color: #666; margin-top: 5px;'>欢迎来到 Elite 生信互动空间。登录 GitHub 即可参与讨论、发帖与交流。</p>
+            <div class='premium-card' style='background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(37, 99, 235, 0.05) 100%); border-left: 5px solid #3b82f6;'>
+                <h2 style='margin:0; color: #fff;'>🧬 Grand Master 社区讨论广场</h2>
+                <p style='color: var(--text-dim); margin-top: 5px;'>Elite Bioinformatics Interactive Space. Share, Ask, and Advance.</p>
             </div>
         """, unsafe_allow_html=True)
         
         # Guide Users to Post
-        st.info("💡 **操作指南**: 您可以在页面底部的评论框直接留言，或者通过上方按钮发起一个全新的讨论主题。")
+        st.info("💡 **Quick Guide**: Use the buttons below to create new threads on GitHub, or scroll down to comment directly on this page.")
         
         col_f1, col_f2 = st.columns([1, 1])
         with col_f1:
@@ -393,9 +470,10 @@ def main():
 
     # Professional Footer
     st.markdown(f"""
-        <div class="footer">
-            <p><strong>Grand Master Bioinfo Platform</strong> | Optimized by <strong>Eto (eto10)</strong> | 📧 etonsalmon160@gmail.com</p>
-            <p style='font-size: 10px; color: #999;'>© 2026 Bioinformatics Automation Suite. All rights reserved.</p>
+        <div class="glass-footer">
+            <p><strong>Grand Master Bioinfo Platform</strong> | Elite Analytics Suite</p>
+            <p style='color: var(--text-dim); margin-top: 10px;'>Architect: <strong>Eto (eto10)</strong> | 📧 etonsalmon160@gmail.com</p>
+            <p style='font-size: 10px; color: #475569; margin-top: 20px;'>© 2026 Bioinformatics Automation. No placeholders, only real science.</p>
         </div>
     """, unsafe_allow_html=True)
 
