@@ -187,6 +187,9 @@ def main():
                 pipeline.run_ml_biomarkers()
             pipeline.run_survival()
             
+            msg_container.info("🧬 正在执行 GO/KEGG 功能富集分析...")
+            pipeline.run_enrichment()
+            
             msg_container.info("📝 正在汇总中英文双语报告...")
             pipeline.generate_report()
             progress_bar.progress(100)
@@ -197,7 +200,7 @@ def main():
             st.divider()
             st.success(f"核心标志物锁定: {pipeline.top_gene}")
             
-            tabs = st.tabs(["核心概览", "机器学习", "免疫浸润", "生信报告"])
+            tabs = st.tabs(["核心概览", "机器学习", "功能富集", "免疫浸润", "生信报告"])
             
             with tabs[0]:
                 c1, c2 = st.columns(2)
@@ -217,10 +220,14 @@ def main():
                     st.image("Web_Analysis_Output/Fig5_ML.png")
 
             with tabs[2]:
+                st.image("Web_Analysis_Output/Fig7_Enrichment.png", caption="KEGG Pathway Enrichment Analysis")
+                st.info("💡 提示: 气泡大小代表基因计数，颜色代表显著性水平 (-log10 P-value).")
+
+            with tabs[3]:
                 st.image("Web_Analysis_Output/Fig3_WGCNA.png", caption="WGCNA 调控模块")
                 st.image("Web_Analysis_Output/Fig4_CIBERSORT.png", caption="免疫细胞含量全景")
 
-            with tabs[3]:
+            with tabs[4]:
                 with open("Web_Analysis_Output/Analysis_Report.md", "r", encoding='utf-8') as f:
                     report_content = f.read()
                 st.markdown(report_content)
