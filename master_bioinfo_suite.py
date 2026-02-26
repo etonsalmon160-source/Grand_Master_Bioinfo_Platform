@@ -28,17 +28,20 @@ COLOR_PALETTE = ["#E64B35", "#4DBBD5", "#00A087", "#3C8DBC", "#F39B7F", "#8491B4
 
 class MasterBioinfoPipeline:
     def __init__(self, out_dir="Grand_Master_Results"):
-        self.out_dir = out_dir
-        if not os.path.exists(out_dir): os.makedirs(out_dir)
-        os.chdir(out_dir)
+        # Use absolute path for output to avoid issues with Streamlit session state
+        self.out_dir = os.path.abspath(out_dir)
+        if not os.path.exists(self.out_dir): 
+            os.makedirs(self.out_dir)
         self.report_images = []
-        print(f"[*] Grand Master Pipeline Initialized in: {os.getcwd()}")
+        print(f"[*] Grand Master Pipeline Initialized in: {self.out_dir}")
 
     def _save_fig(self, name, title, caption):
-        path = f"{name}.png"
+        filename = f"{name}.png"
+        path = os.path.join(self.out_dir, filename)
         plt.savefig(path)
         plt.close()
-        self.report_images.append({"path": path, "title": title, "caption": caption})
+        # Keep relative path for Markdown report
+        self.report_images.append({"path": filename, "title": title, "caption": caption})
 
     def run_pre_processing(self, n_genes=3000, n_samples=40):
         print("[1/8] Data Simulation & Pre-processing...")
@@ -216,7 +219,8 @@ class MasterBioinfoPipeline:
 
     def generate_report(self):
         print("[7/8] Generating Automated Analysis Report...")
-        with open("Analysis_Report.md", "w", encoding='utf-8') as f:
+        report_path = os.path.join(self.out_dir, "Analysis_Report.md")
+        with open(report_path, "w", encoding='utf-8') as f:
             f.write("# 🧪 生信全流程自动化分析报告 (Elite Edition)\n\n")
             f.write("## 1. 项目摘要\n本报告由 **OpenClaw 生信平台** 自动生成，集成了从差异表达分析到免疫浸润预估的全套 CNS 级别工作流。\n\n")
             
