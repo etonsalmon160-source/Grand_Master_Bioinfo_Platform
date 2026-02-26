@@ -77,8 +77,27 @@ def main():
             # Init Pipeline
             pipeline = MasterBioinfoPipeline(out_dir="Web_Analysis_Output")
             
+            # 1. Load Data
             msg_container.info("🔄 正在加载并预处理数据...")
-            pipeline.run_pre_processing(n_genes=n_genes)
+            custom_counts = None
+            custom_meta = None
+            
+            if not use_demo:
+                try:
+                    # Generic loader for CSV/TXT/TSV
+                    sep = ',' if exp_file.name.endswith('.csv') else '\t'
+                    custom_counts = pd.read_csv(exp_file, index_index=0, sep=sep)
+                    custom_meta = pd.read_csv(meta_file, index_index=0, sep=sep)
+                    
+                    # Probe Conversion (e.g., GPL570)
+                    custom_counts = pipeline.convert_probes_to_symbols(custom_counts)
+                except Exception as e:
+                    st.error(f"数据读取失败: {str(e)}")
+                    st.stop()
+            
+            pipeline.run_pre_processing(n_genes=n_genes, 
+                                     custom_counts=custom_counts, 
+                                     custom_meta=custom_meta)
             progress_bar.progress(20)
             
             msg_container.info("📊 正在探测样本差异 (DEA)...")

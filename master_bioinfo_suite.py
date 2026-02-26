@@ -43,24 +43,47 @@ class MasterBioinfoPipeline:
         # Keep relative path for Markdown report
         self.report_images.append({"path": filename, "title": title, "caption": caption})
 
-    def run_pre_processing(self, n_genes=3000, n_samples=40):
+    def convert_probes_to_symbols(self, df, platform="GPL570"):
+        """
+        Simulated Probe to Symbol conversion based on common platforms.
+        In a real production environment, this would query a database or local mapping file.
+        """
+        print(f"[*] Mapping Probe IDs for platform: {platform}")
+        # Realistic mapping example for demonstration
+        mapping = {
+            "200000_s_at": "PRKCA", "200001_at": "PRKCB", "200002_at": "PRKCG",
+            "200003_s_at": "ABCB1", "200004_at": "AKT1", "200005_at": "MTOR"
+        }
+        # If probes match common patterns, map them, else keep original
+        df.index = [mapping.get(x, x) for x in df.index]
+        return df
+
+    def run_pre_processing(self, n_genes=3000, n_samples=40, custom_counts=None, custom_meta=None):
         print("[1/8] Data Simulation & Pre-processing...")
-        samples = [f"Ctrl_{i+1:02d}" for i in range(n_samples//2)] + [f"Tumor_{i+1:02d}" for i in range(n_samples//2)]
-        genes = [f"Gene_{i:04d}" for i in range(n_genes)]
         
-        data = np.random.lognormal(mean=3, sigma=1.0, size=(n_genes, n_samples))
-        # Add group signal
-        de_idx = np.random.choice(n_genes, 150, replace=False)
-        data[de_idx[:100], n_samples//2:] *= np.random.uniform(3, 10, (100, n_samples//2))
-        data[de_idx[100:], n_samples//2:] /= np.random.uniform(3, 10, (50, n_samples//2))
-        
-        self.counts = pd.DataFrame(data, index=genes, columns=samples)
-        self.metadata = pd.DataFrame({
-            'Group': ['Healthy']*(n_samples//2) + ['Cancer']*(n_samples//2),
-            'Survival': np.random.exponential(500, n_samples) / (data[de_idx[0], :] / data[de_idx[0], :].mean()),
-            'Status': np.random.binomial(1, 0.7, n_samples)
-        }, index=samples)
-        
+        if custom_counts is not None:
+            self.counts = custom_counts
+            self.metadata = custom_meta
+            # Auto-detect grouping if Metadata is provided
+            if 'Group' not in self.metadata.columns and self.metadata.shape[1] > 0:
+                # If no 'Group' column, try to use the first categorical column
+                self.metadata['Group'] = self.metadata.iloc[:, 0]
+        else:
+            # Original simulation logic
+            samples = [f"Ctrl_{i+1:02d}" for i in range(n_samples//2)] + [f"Tumor_{i+1:02d}" for i in range(n_samples//2)]
+            genes = [f"Gene_{i:04d}" for i in range(n_genes)]
+            data = np.random.lognormal(mean=3, sigma=1.0, size=(n_genes, n_samples))
+            de_idx = np.random.choice(n_genes, 150, replace=False)
+            data[de_idx[:100], n_samples//2:] *= np.random.uniform(3, 10, (100, n_samples//2))
+            data[de_idx[100:], n_samples//2:] /= np.random.uniform(3, 10, (50, n_samples//2))
+            self.counts = pd.DataFrame(data, index=genes, columns=samples)
+            self.metadata = pd.DataFrame({
+                'Group': ['Healthy']*(n_samples//2) + ['Cancer']*(n_samples//2),
+                'Survival': np.random.exponential(500, n_samples),
+                'Status': np.random.binomial(1, 0.7, n_samples)
+            }, index=samples)
+
+        # Normalize and QC
         self.log_cpm = np.log2((self.counts / self.counts.sum() * 1e6) + 1)
         
         # PCA
