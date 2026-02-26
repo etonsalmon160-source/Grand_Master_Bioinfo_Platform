@@ -103,7 +103,7 @@ def main():
     st.sidebar.info(f"""
     **🧪 指导与开发声明**  
     **负责人**: Eto (eto10)  
-    **联系邮箱**: eto10@example.com  
+    **联系邮箱**: etonsalmon160@gmail.com  
     *Bioinformatics workflow automation expert.*
     """)
     
@@ -231,7 +231,7 @@ def main():
     # Professional Footer
     st.markdown(f"""
         <div class="footer">
-            <p><strong>Grand Master Bioinfo Platform</strong> | Optimized by <strong>Eto (eto10)</strong> | 📧 eto10@example.com</p>
+            <p><strong>Grand Master Bioinfo Platform</strong> | Optimized by <strong>Eto (eto10)</strong> | 📧 etonsalmon160@gmail.com</p>
             <p style='font-size: 10px; color: #999;'>© 2026 Bioinformatics Automation Suite. All rights reserved.</p>
         </div>
     """, unsafe_allow_html=True)
