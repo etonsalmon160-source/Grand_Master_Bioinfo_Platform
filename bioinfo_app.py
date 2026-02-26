@@ -442,20 +442,20 @@ def main():
         
         st.divider()
         
-        # Giscus (GitHub Discussions based commenting)
+        # Giscus (GitHub Discussions based commenting) - Premium Dark Theme
         giscus_html = """
-        <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+        <div id="giscus-parent" style="background: rgba(15, 23, 42, 0.5); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: 25px; min-height: 800px;">
             <script src="https://giscus.app/client.js"
                     data-repo="etonsalmon160-source/Grand_Master_Bioinfo_Platform"
                     data-repo-id="R_kgDONS4oWQ"
                     data-category="Announcements"
                     data-category-id="DIC_kwDONS4oWc4Ckk3b"
-                    data-mapping="pathname"
+                    data-mapping="title"
                     data-strict="0"
                     data-reactions-enabled="1"
                     data-emit-metadata="0"
                     data-input-position="top"
-                    data-theme="light_high_contrast"
+                    data-theme="dark_dimmed"
                     data-lang="zh-CN"
                     crossorigin="anonymous"
                     async>
@@ -463,7 +463,18 @@ def main():
         </div>
         """
         import streamlit.components.v1 as components
-        components.html(giscus_html, height=1200, scrolling=True)
+        components.html(giscus_html, height=1000, scrolling=True)
+        
+        # Enhanced Troubleshooting Section
+        with st.expander("🛠️ 论坛无法加载? (Troubleshooting Forum)"):
+            st.markdown("""
+            若上方区域显示空白，请按以下步骤操作：
+            1. **开启 Discussions**: 前往 [仓库设置](https://github.com/etonsalmon160-source/Grand_Master_Bioinfo_Platform/settings) 勾选 **Discussions** 选项。
+            2. **安装 Giscus**: 确保已在 GitHub 上为该仓库安装并授权了 [giscus](https://github.com/apps/giscus) 应用。
+            3. **网络检查**: 论坛依赖 GitHub API，如果您的网络环境受限，可能需要开启全局代理。
+            4. **手动进入**: 您也可以直接点击上方按钮 **"查看所有讨论主题"** 在 GitHub 原生界面参与。
+            """)
+
 
     with nav_tabs[2]:
         st.markdown("### 📚 平台指南与 FAQ")
