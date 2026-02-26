@@ -343,41 +343,46 @@ def main():
                                    file_name="Master_Bioinfo_Report.md")
 
     with nav_tabs[1]:
-        st.markdown("### 🧬 Grand Master 社区讨论广场")
-        st.write("欢迎在这里分享您的生信发现、提问或交流心得。")
+        st.markdown("""
+            <div style='background: linear-gradient(90deg, #f8f9fa 0%, #e9ecef 100%); padding: 20px; border-radius: 15px; border-left: 5px solid #2ea44f; margin-bottom: 25px;'>
+                <h2 style='margin:0; color: #1a2a6c;'>🧬 Grand Master 社区讨论广场</h2>
+                <p style='color: #666; margin-top: 5px;'>欢迎来到 Elite 生信互动空间。登录 GitHub 即可参与讨论、发帖与交流。</p>
+            </div>
+        """, unsafe_allow_html=True)
         
         # Guide Users to Post
-        st.success("💡 **想发布新帖子?**")
-        st.info("您可以在下方直接评论现有话题，或者点击下方按钮跳转到 GitHub 开启一个新的讨论主题。登录 GitHub 后即可操作！")
+        st.info("💡 **操作指南**: 您可以在页面底部的评论框直接留言，或者通过上方按钮发起一个全新的讨论主题。")
         
         col_f1, col_f2 = st.columns([1, 1])
         with col_f1:
-            st.link_button("✍️ 发布新讨论 (前往 GitHub)", "https://github.com/etonsalmon160-source/Grand_Master_Bioinfo_Platform/discussions/new/choose", use_container_width=True)
+            st.link_button("✍️ 发布新讨论 (前往 GitHub)", "https://github.com/etonsalmon160-source/Grand_Master_Bioinfo_Platform/discussions/new/choose", icon="🚀", use_container_width=True)
         with col_f2:
-            st.link_button("📢 查看所有讨论主题", "https://github.com/etonsalmon160-source/Grand_Master_Bioinfo_Platform/discussions", use_container_width=True)
+            st.link_button("📢 查看所有讨论主题", "https://github.com/etonsalmon160-source/Grand_Master_Bioinfo_Platform/discussions", icon="🔍", use_container_width=True)
         
         st.divider()
         
         # Giscus (GitHub Discussions based commenting)
         giscus_html = """
-        <script src="https://giscus.app/client.js"
-                data-repo="etonsalmon160-source/Grand_Master_Bioinfo_Platform"
-                data-repo-id="R_kgDONS4oWQ"
-                data-category="Announcements"
-                data-category-id="DIC_kwDONS4oWc4Ckk3b"
-                data-mapping="pathname"
-                data-strict="0"
-                data-reactions-enabled="1"
-                data-emit-metadata="0"
-                data-input-position="bottom"
-                data-theme="light"
-                data-lang="zh-CN"
-                crossorigin="anonymous"
-                async>
-        </script>
+        <div style="background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.05);">
+            <script src="https://giscus.app/client.js"
+                    data-repo="etonsalmon160-source/Grand_Master_Bioinfo_Platform"
+                    data-repo-id="R_kgDONS4oWQ"
+                    data-category="Announcements"
+                    data-category-id="DIC_kwDONS4oWc4Ckk3b"
+                    data-mapping="pathname"
+                    data-strict="0"
+                    data-reactions-enabled="1"
+                    data-emit-metadata="0"
+                    data-input-position="top"
+                    data-theme="light_high_contrast"
+                    data-lang="zh-CN"
+                    crossorigin="anonymous"
+                    async>
+            </script>
+        </div>
         """
         import streamlit.components.v1 as components
-        components.html(giscus_html, height=1000, scrolling=True)
+        components.html(giscus_html, height=1200, scrolling=True)
 
     with nav_tabs[2]:
         st.markdown("### 📚 平台指南与 FAQ")
