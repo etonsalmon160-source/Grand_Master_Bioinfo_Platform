@@ -378,6 +378,26 @@ def main():
             progress_bar.progress(100)
             
             msg_container.success("✅ 分析圆满完成！")
+            
+            # --- PUSHPLUS WECHAT NOTIFICATION ---
+            try:
+                push_token = "b5300e241cad4d73b36533b5c950e22d"
+                push_title = "📊 生信分析任务已圆满完成"
+                push_content = f"""
+                ## 🚀 实验简报 (Grand Master Bioinfo)
+
+                **任务状态**: ✅ 已完成
+                **核心标志物**: {pipeline.top_gene}
+                **分析时间**: {pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S')}
+
+                > 您的生信私人实验室已完成全流程流水线（DEA, WGCNA, ML, Survival）。现已生成可视化报告，请返回 Web 界面查看详情。
+                """
+                requests.post("https://www.pushplus.plus/send", 
+                             json={"token": push_token, "title": push_title, "content": push_content, "template": "markdown"},
+                             timeout=5)
+            except Exception as e:
+                pass
+
 
             # --- DISPLAY RESULTS ---
             st.divider()
