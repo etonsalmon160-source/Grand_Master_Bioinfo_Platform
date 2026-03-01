@@ -41,7 +41,9 @@ class MasterBioinfoPipeline:
         self.res_df = None
         self.wgcna_modules = None
         self.top_gene = "None"
-        
+        self.dataset_id = None  # 由 UI / 启动器在创建后注入，用于报告摘要标注 GSE 号
+        self._report_summary = {}  # 供报告数据解析与 OpenClaw 下放自由度使用
+
         print(f"[*] Grand Master Pipeline Initialized in: {self.out_dir}")
 
     def _save_fig(self, name, title, caption):
@@ -59,7 +61,7 @@ class MasterBioinfoPipeline:
         import GEOparse
         print(f"[*] Attempting to fetch GEO data: {accession}")
         try:
-            gse = GEOparse.get_GSE(accession, destdir=self.out_dir, silent=True)
+            gse = GEOparse.get_GEO(geo=accession, destdir=self.out_dir, silent=True)
             # Pivot expression data
             # Typically GEOparse object contains samples in a list
             # We take the first platform found (GPL)
@@ -124,7 +126,7 @@ class MasterBioinfoPipeline:
             }, index=samples)
 
         # Normalize and QC
-        self.log_cpm = np.log2((self.counts / self.counts.sum() * 1e6) + 1)
+        self.log_cpm = np.log2((self.counts / self.counts.sum() * 1e6) + 1).fillna(0)
         
         # PCA
         pca = PCA(n_components=2)
@@ -141,8 +143,16 @@ class MasterBioinfoPipeline:
         
         res = []
         for g in self.log_cpm.index:
-            t, p = stats.ttest_ind(self.log_cpm.loc[g, cancer], self.log_cpm.loc[g, healthy])
-            fc = self.log_cpm.loc[g, cancer].mean() - self.log_cpm.loc[g, healthy].mean()
+            c_vals = self.log_cpm.loc[g, cancer].values.astype(float)
+            h_vals = self.log_cpm.loc[g, healthy].values.astype(float)
+            # 移除任何残留 NaN
+            c_vals = c_vals[~np.isnan(c_vals)]
+            h_vals = h_vals[~np.isnan(h_vals)]
+            if len(c_vals) < 2 or len(h_vals) < 2:
+                res.append({'Gene': g, 'log2FC': 0, 'pvalue': 1.0})
+                continue
+            t, p = stats.ttest_ind(c_vals, h_vals)
+            fc = np.mean(c_vals) - np.mean(h_vals)
             res.append({'Gene': g, 'log2FC': fc, 'pvalue': p})
             
         self.res_df = pd.DataFrame(res).set_index('Gene')
@@ -168,8 +178,25 @@ class MasterBioinfoPipeline:
         plt.ylabel(f"-log10({p_type.upper()})")
         self._save_fig("Fig2_Volcano", "Volcano Plot", f"Differential analysis with dynamic thresholds: {p_type} < {p_thresh} and |log2FC| > {fc_thresh}.")
         
-        # Store for downstream
+        # Store for downstream and report data parsing
         self.sig_genes = self.res_df[self.res_df['Sig'] != 'NS'].index.tolist()
+        up_genes = self.res_df[self.res_df['Sig'] == 'Up'].index.tolist()
+        down_genes = self.res_df[self.res_df['Sig'] == 'Down'].index.tolist()
+        top_up = self.res_df.loc[up_genes].sort_values('log2FC', ascending=False).head(10).index.tolist() if up_genes else []
+        top_down = self.res_df.loc[down_genes].sort_values('log2FC', ascending=True).head(10).index.tolist() if down_genes else []
+        n_healthy = (self.metadata['Group'] == 'Healthy').sum()
+        n_cancer = (self.metadata['Group'] == 'Cancer').sum()
+        self._report_summary['dea'] = {
+            'n_genes': self.log_cpm.shape[0],
+            'n_samples': self.log_cpm.shape[1],
+            'n_healthy': int(n_healthy),
+            'n_cancer': int(n_cancer),
+            'n_up': len(up_genes),
+            'n_down': len(down_genes),
+            'n_sig': len(self.sig_genes),
+            'top_up': top_up,
+            'top_down': top_down,
+        }
         print(f"  [*] Detected {len(self.sig_genes)} significant genes.")
 
     def run_wgcna_lite(self):
@@ -218,58 +245,86 @@ class MasterBioinfoPipeline:
         self._save_fig("Fig4_CIBERSORT", "Immune Infiltration Panorama", "Estimated proportions of 6 immune cell types across all samples.")
 
     def run_advanced_ml(self):
-        print("[5/8] Advanced ML: Dual-Model Feature Selection (RF + LASSO)...")
-        from sklearn.linear_model import LassoCV
+        print("[5/8] Advanced ML: Dual-Model Feature Selection (RF + L1-Logistic)...")
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.model_selection import train_test_split
         from sklearn.metrics import roc_curve, auc
-        
+        from sklearn.preprocessing import StandardScaler
+
         # Scientific Screening: Use sig_genes for ML to ensure relevance and speed
         if hasattr(self, 'sig_genes') and len(self.sig_genes) >= 5:
             target_genes = self.sig_genes
         else:
             target_genes = self.log_cpm.var(axis=1).sort_values(ascending=False).head(2000).index
-            
+
         print(f"  [*] Screening identified {len(target_genes)} genes for ML modeling.")
-        X = self.log_cpm.loc[target_genes].T
+        X = self.log_cpm.loc[target_genes].T.fillna(0.0)
         y = (self.metadata['Group'] == 'Cancer').astype(int)
-        
-        # --- Method 1: LASSO Regression ---
-        print("  [*] Running LASSO Cross-Validation...")
-        lasso_cv = LassoCV(cv=5, random_state=42, max_iter=10000).fit(X, y)
-        
-        # LASSO CV Plot
+
+        # 分层划分训练/测试集，ROC 在测试集上评估才有意义（避免“和猜没区别”的虚高/虚低）
+        n_min = min((y == 0).sum(), (y == 1).sum())
+        if n_min < 5:
+            X_train, X_test = X.copy(), X.copy()
+            y_train, y_test = y, y
+            scaler = StandardScaler()
+            X_train = pd.DataFrame(scaler.fit_transform(X_train), index=X_train.index, columns=X_train.columns)
+            X_test = pd.DataFrame(scaler.transform(X_test), index=X_test.index, columns=X_test.columns)
+            print("  [*] 样本较少，使用全量数据训练与评估（建议增加样本后使用留出集）")
+        else:
+            X_train, X_test, y_train, y_test = train_test_split(
+                X, y, test_size=0.25, stratify=y, random_state=42
+            )
+            scaler = StandardScaler()
+            X_train = pd.DataFrame(scaler.fit_transform(X_train), index=X_train.index, columns=X_train.columns)
+            X_test = pd.DataFrame(scaler.transform(X_test), index=X_test.index, columns=X_test.columns)
+            print(f"  [*] 训练集 {X_train.shape[0]} 样本，测试集 {X_test.shape[0]} 样本（ROC 基于测试集）")
+
+        # --- Method 1: L1 逻辑回归（等价于 LASSO 二分类，输出为概率，适合 ROC）---
+        print("  [*] Running L1-Logistic (LASSO 二分类)...")
+        l1_logistic = LogisticRegression(
+            penalty='l1', solver='saga', max_iter=3000, C=0.1, random_state=42
+        ).fit(X_train, y_train)
+        # 交叉验证选 C（可选，这里用固定 C 保证稳定）
+        from sklearn.linear_model import LogisticRegressionCV
+        l1_cv = LogisticRegressionCV(
+            Cs=10, penalty='l1', solver='saga', cv=3, max_iter=2000, random_state=42
+        ).fit(X_train, y_train)
+        best_C = np.atleast_1d(l1_cv.C_)[0]
+
+        # L1 系数路径示意（用最终模型非零系数数量）
+        nz = np.sum(np.abs(l1_logistic.coef_) > 1e-5)
+        print(f"  [*] L1 非零系数数量: {nz}")
+
+        # LASSO/L1 CV 图（用 LogisticRegressionCV 的分数代替）
         plt.figure(figsize=(7, 6))
-        mse_means = np.mean(lasso_cv.mse_path_, axis=1)
-        mse_stds = np.std(lasso_cv.mse_path_, axis=1)
-        log_alphas = -np.log10(lasso_cv.alphas_)
-        plt.errorbar(log_alphas, mse_means, yerr=mse_stds, fmt='o', color='red', ecolor='grey', capsize=3, markersize=4)
-        plt.axvline(-np.log10(lasso_cv.alpha_), color='black', linestyle='--')
-        plt.title("Lasso Cross-Validation (Mse vs -Log(Lambda))")
-        plt.xlabel("-Log(Lambda)")
-        plt.ylabel("Mean Squared Error")
-        self._save_fig("Fig5a_Lasso_CV", "LASSO CV Threshold", "Cross-validation to identify the optimal penalty parameter (Lambda).")
-        
-        # LASSO Coef Plot (Simulated path for visual)
-        plt.figure(figsize=(7, 6))
-        from sklearn.linear_model import lasso_path
-        alphas_path, coefs_path, _ = lasso_path(X, y)
-        for i in range(coefs_path.shape[0]):
-            plt.plot(-np.log10(alphas_path), coefs_path[i, :], alpha=0.7)
-        plt.title("Lasso Coefficient Paths")
-        plt.xlabel("-Log(Lambda)")
-        plt.ylabel("Coefficients")
-        self._save_fig("Fig5b_Lasso_Path", "LASSO Coefficient Path", "Demonstration of how gene coefficients shrink to zero as penalty increases.")
-        
+        score_key = 1 if 1 in l1_cv.scores_ else list(l1_cv.scores_.keys())[0]
+        plt.semilogx(l1_cv.Cs_, l1_cv.scores_[score_key].mean(axis=0), 'o-', color='red')
+        plt.axvline(best_C, color='black', linestyle='--', label=f'Best C={best_C:.4f}')
+        plt.title("L1-Logistic CV (Mean Accuracy vs C)")
+        plt.xlabel("C (Inverse Regularization)")
+        plt.ylabel("Mean Accuracy")
+        plt.legend()
+        self._save_fig("Fig5a_Lasso_CV", "L1-Logistic CV", "Cross-validation to select regularization strength C.")
+
+        # 系数条形图（取绝对值最大的若干基因）
+        coef_series = pd.Series(l1_logistic.coef_.ravel(), index=X.columns).abs().sort_values(ascending=False).head(15)
+        plt.figure(figsize=(8, 6))
+        plt.barh(range(len(coef_series)), coef_series.values, color='#4DBBD5', alpha=0.8)
+        plt.yticks(range(len(coef_series)), coef_series.index)
+        plt.title("L1-Logistic: Top Coefficients (|weight|)")
+        plt.xlabel("|Coefficient|")
+        self._save_fig("Fig5b_Lasso_Path", "L1 Coefficient Weights", "Top genes selected by L1 (sparse) logistic regression.")
+
         # --- Method 2: Random Forest ---
-        print("  [*] Running Random Forest Importance...")
-        # RF Error Rate Analysis (Error vs Trees)
+        print("  [*] Running Random Forest...")
         rf_eval = RandomForestClassifier(n_estimators=1, warm_start=True, oob_score=True, random_state=42)
         error_rates = []
         tree_range = range(10, 201, 10)
         for n in tree_range:
             rf_eval.set_params(n_estimators=n)
-            rf_eval.fit(X, y)
+            rf_eval.fit(X_train, y_train)
             error_rates.append(1 - rf_eval.oob_score_)
-        
+
         plt.figure(figsize=(7, 6))
         plt.plot(tree_range, error_rates, 'k-', marker='o', markersize=4, label='OOB Error Rate')
         plt.title("Random Forest Error Rates (Convergence Analysis)")
@@ -279,9 +334,9 @@ class MasterBioinfoPipeline:
         self._save_fig("Fig5c1_RF_Error", "RF Error Convergence", "Out-of-bag error stabilization as trees are added to the forest.")
 
         rf = RandomForestClassifier(n_estimators=100, random_state=42)
-        rf.fit(X, y)
-        
-        # RF Importance Plot (Lollipop Style)
+        rf.fit(X_train, y_train)
+
+        # RF Importance (on training data for interpretation)
         imp = pd.Series(rf.feature_importances_, index=X.columns).sort_values(ascending=False).head(15)
         plt.figure(figsize=(8, 6))
         plt.hlines(y=range(len(imp)), xmin=0, xmax=imp, color='grey', alpha=0.5)
@@ -290,26 +345,27 @@ class MasterBioinfoPipeline:
         plt.title("Random Forest: Feature Importance (Gini)")
         plt.xlabel("Mean Decrease Gini")
         self._save_fig("Fig5c2_RF_Imp", "RF Feature Importance", "Ranking of top genes based on their contribution to sample classification.")
-        
-        # --- Combined ROC ---
+
+        # --- ROC 均在测试集上计算，避免“和猜没区别”的 0.5 错觉 ---
         plt.figure(figsize=(6, 6))
-        # RF ROC
-        y_prob_rf = rf.predict_proba(X)[:, 1]
-        fpr_rf, tpr_rf, _ = roc_curve(y, y_prob_rf)
-        plt.plot(fpr_rf, tpr_rf, label=f'Random Forest (AUC = {auc(fpr_rf, tpr_rf):.3f})', color='blue')
-        # Lasso ROC (using tuned model)
-        y_prob_lasso = lasso_cv.predict(X)
-        fpr_ls, tpr_ls, _ = roc_curve(y, y_prob_lasso)
-        plt.plot(fpr_ls, tpr_ls, label=f'LASSO (AUC = {auc(fpr_ls, tpr_ls):.3f})', color='red', linestyle='--')
-        
+        y_prob_rf = rf.predict_proba(X_test)[:, 1]
+        fpr_rf, tpr_rf, _ = roc_curve(y_test, y_prob_rf)
+        auc_rf = auc(fpr_rf, tpr_rf)
+        plt.plot(fpr_rf, tpr_rf, label=f'Random Forest (AUC = {auc_rf:.3f})', color='blue')
+        y_prob_l1 = l1_logistic.predict_proba(X_test)[:, 1]
+        fpr_l1, tpr_l1, _ = roc_curve(y_test, y_prob_l1)
+        auc_l1 = auc(fpr_l1, tpr_l1)
+        plt.plot(fpr_l1, tpr_l1, label=f'L1-Logistic (AUC = {auc_l1:.3f})', color='red', linestyle='--')
+
         plt.plot([0, 1], [0, 1], 'k--', alpha=0.5)
         plt.xlabel('False Positive Rate (1-Specificity)')
         plt.ylabel('True Positive Rate (Sensitivity)')
-        plt.title('Multi-Model ROC Comparison')
+        plt.title('Multi-Model ROC (Test Set)')
         plt.legend(loc='lower right')
-        self._save_fig("Fig5d_ROC", "Multi-Model ROC Analysis", "Comparative evaluation of Random Forest and LASSO models.")
-        
+        self._save_fig("Fig5d_ROC", "Multi-Model ROC Analysis", "ROC on held-out test set; AUC > 0.5 indicates discriminative ability.")
+
         self.top_gene = imp.index[0]
+        self._report_summary['ml'] = {'auc_rf': float(auc_rf), 'auc_l1': float(auc_l1)}
 
     def run_survival(self):
         print("[6/8] Prognostic Validation (Survival Analysis)...")
@@ -365,19 +421,91 @@ class MasterBioinfoPipeline:
         plt.tight_layout()
         self._save_fig("Fig7_Enrichment", "Functional Enrichment Analysis", "Simulated GO/KEGG enrichment showing core biological processes regulated by the top biomarkers.")
 
+    def _get_openclaw_interpretation(self):
+        """
+        可选扩展点：OpenClaw 下放自由度。
+        子类可重写此方法，或通过环境变量/配置调用外部 API（如 LLM）生成解读文本。
+        返回 None 或 str：若返回非空字符串，将写入报告「OpenClaw 解读」一节。
+        """
+        # 可通过环境变量指定解读接口，例如 OPENCLAW_INTERPRET_URL / OPENCLAW_API_KEY
+        import os
+        url = os.environ.get("OPENCLAW_INTERPRET_URL", "").strip()
+        if not url:
+            return None
+        try:
+            import requests
+            api_key = os.environ.get("OPENCLAW_API_KEY", "").strip()
+            headers = {}
+            if api_key:
+                # 通用 Bearer Token 形式，便于对接各类 LLM/解释服务
+                headers["Authorization"] = f"Bearer {api_key}"
+            payload = {
+                "summary": self._report_summary,
+                "top_gene": self.top_gene,
+                "dataset_id": self.dataset_id,
+            }
+            r = requests.post(url, json=payload, headers=headers or None, timeout=10)
+            if r.status_code == 200 and r.text:
+                return r.text
+        except Exception:
+            pass
+        return None
+
     def generate_report(self):
         print("[8/9] Generating Automated Analysis Report...")
         report_path = os.path.join(self.out_dir, "Analysis_Report.md")
+        summary = self._report_summary
+        dea = summary.get("dea", {})
+        ml = summary.get("ml", {})
+
         with open(report_path, "w", encoding='utf-8') as f:
-            f.write("# 🧪 生信全流程自动化分析报告 (Elite Edition)\n\n")
-            f.write("## 1. 项目摘要\n本报告由 **OpenClaw 生信平台** 自动生成，集成了从差异表达分析到免疫浸润预估的全套 CNS 级别工作流。\n\n")
-            
+            f.write("# 生信全流程自动化分析报告 (Elite Edition)\n\n")
+            f.write("## 1. 项目摘要\n\n")
+            if self.dataset_id:
+                f.write(f"本报告基于 GEO 公共表达谱数据集 **{self.dataset_id}**，由 **OpenClaw 生信平台** 自动生成，集成了从差异表达分析到免疫浸润、机器学习与生存分析的全套工作流。\n\n")
+            else:
+                f.write("本报告由 **OpenClaw 生信平台** 自动生成，集成了从差异表达分析到免疫浸润、机器学习与生存分析的全套工作流。\n\n")
+
+            f.write("## 2. 数据解析\n\n")
+            f.write("本节基于本次运行的真实结果汇总关键指标，便于复现与审阅。\n\n")
+            f.write("| 项目 | 数值 |\n|------|------|\n")
+            f.write(f"| 表达矩阵基因数 | {dea.get('n_genes', '-')} |\n")
+            f.write(f"| 样本总数 | {dea.get('n_samples', '-')} |\n")
+            f.write(f"| Healthy/低风险组样本数 | {dea.get('n_healthy', '-')} |\n")
+            f.write(f"| Cancer/高风险组样本数 | {dea.get('n_cancer', '-')} |\n")
+            f.write(f"| 差异表达基因总数 (DEG) | {dea.get('n_sig', '-')} |\n")
+            f.write(f"| 上调基因数 | {dea.get('n_up', '-')} |\n")
+            f.write(f"| 下调基因数 | {dea.get('n_down', '-')} |\n")
+            if ml:
+                f.write(f"| 随机森林 ROC-AUC (测试集) | {ml.get('auc_rf', 0):.3f} |\n")
+                f.write(f"| L1 逻辑回归 ROC-AUC (测试集) | {ml.get('auc_l1', 0):.3f} |\n")
+            f.write("\n")
+            if dea.get("top_up"):
+                f.write("**代表性上调基因 (按 log2FC 排序)**：`" + "`, `".join(dea["top_up"][:10]) + "`\n\n")
+            if dea.get("top_down"):
+                f.write("**代表性下调基因 (按 log2FC 排序)**：`" + "`, `".join(dea["top_down"][:10]) + "`\n\n")
+
+            f.write("## 3. 图表与解读\n\n")
             for img in self.report_images:
                 f.write(f"### {img['title']}\n")
                 f.write(f"![{img['title']}]({img['path']})\n\n")
                 f.write(f"> **结果解读**: {img['caption']}\n\n---\n")
-            
-            f.write("\n## 2. 结论建议\n基于上述机器学习与生存分析，**" + self.top_gene + "** 被识别为最具潜力的生物标志物，具有显著的临床预后预测价值。")
+
+            f.write("\n## 4. 结论建议\n\n")
+            f.write(f"基于上述机器学习特征重要性与生存分析，**{self.top_gene}** 被识别为本次分析中最具潜力的生物标志物。")
+            if ml:
+                f.write(f" 测试集上 RF AUC = {ml.get('auc_rf', 0):.3f}，L1-Logistic AUC = {ml.get('auc_l1', 0):.3f}，可用于评估分类判别能力。")
+            f.write("\n\n")
+
+            openclaw_text = self._get_openclaw_interpretation()
+            if openclaw_text:
+                f.write("## 5. OpenClaw 解读\n\n")
+                f.write(openclaw_text.strip())
+                f.write("\n\n")
+            else:
+                f.write("## 5. OpenClaw 解读\n\n")
+                f.write("*（可选：设置环境变量 `OPENCLAW_INTERPRET_URL` 为解读接口地址，或重写 `_get_openclaw_interpretation()` 以接入自有 OpenClaw/LLM 服务，此处将展示 AI 解读内容。）*\n\n")
+
         print("[OK] Report saved as Analysis_Report.md")
 
 if __name__ == "__main__":

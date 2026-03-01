@@ -1,0 +1,23 @@
+# OpenClaw 生信工作流 — Conda 环境（环境与代码一起封装、可复现）
+name: openclaw
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python>=3.10
+  - pip
+  - pip:
+    - pandas
+    - numpy
+    - matplotlib
+    - seaborn
+    - scipy
+    - statsmodels
+    - scikit-learn
+    - lifelines
+    - streamlit>=1.31.0
+    - "altair<5.0.0"
+    - jinja2
+    - networkx
+    - GEOparse
+    - requests

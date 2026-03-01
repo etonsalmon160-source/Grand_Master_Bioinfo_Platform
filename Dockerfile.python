@@ -1,0 +1,8 @@
+FROM python:3.11-slim
+WORKDIR /app
+COPY . .
+RUN python -m pip install --upgrade pip
+RUN if [ -f pyproject.toml ]; then python -m pip install build; python -m build; fi
+RUN if [ -f setup.py ]; then python setup.py install; fi
+RUN chmod +x launcher.sh
+CMD ["bash", "./launcher.sh"]
