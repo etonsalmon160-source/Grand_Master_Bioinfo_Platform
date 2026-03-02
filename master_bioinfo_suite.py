@@ -234,12 +234,18 @@ class MasterBioinfoPipeline:
         down_genes = self.res_df[self.res_df['Sig'] == 'Down'].sort_values('pvalue').head(n_top).index.tolist()
         target_genes = up_genes + down_genes
         
+        is_exploratory = False
         if not target_genes:
-            print("  [!] No significant genes for heatmap.")
-            return
+            print("  [!] No significant genes for heatmap. Switching to Exploratory Mode (Top Variance).")
+            target_genes = self.log_cpm.var(axis=1).sort_values(ascending=False).head(n_top*2).index.tolist()
+            is_exploratory = True
 
         # Prepare expression data and sort samples by group to create 'four-quadrant' look
         samples_sorted = self.metadata.sort_values('Group').index
+        # Ensure genes exist in log_cpm
+        target_genes = [g for g in target_genes if g in self.log_cpm.index]
+        if not target_genes: return
+        
         plot_data = self.log_cpm.loc[target_genes, samples_sorted]
         
         # Z-score scaling (along genes/rows) for optimal contrast
@@ -262,10 +268,13 @@ class MasterBioinfoPipeline:
         for i, color in enumerate(group_colors):
              g.ax_heatmap.add_patch(plt.Rectangle((i, 0), 1, -0.02, facecolor=color, clip_on=False, transform=g.ax_heatmap.get_xaxis_transform()))
 
-        g.ax_heatmap.set_title("Expression Heatmap of Top Biomarkers", fontweight='bold', pad=40)
-        g.fig.suptitle("Traditional Four-Quadrant Visualization (Normal vs Tumor)", y=0.98, fontsize=14, fontweight='bold')
+        g.ax_heatmap.set_title("Expression Heatmap of Top Biomarkers" if not is_exploratory else "Exploratory Heatmap (High Variance Genes)", fontweight='bold', pad=40)
+        g.fig.suptitle("Traditional Four-Quadrant Visualization (Normal vs Tumor)" if not is_exploratory else "Top 50 Most Variable Genes Across Samples", y=0.98, fontsize=14, fontweight='bold')
         
-        self._save_fig("Fig4_Heatmap", "DEG Expression Heatmap", "Z-score normalized expression of top regulated genes. Samples are sorted by Group (Healthy vs Cancer) and Genes are clustered by biological pattern.")
+        cap = "Z-score normalized expression of top regulated genes. Samples are sorted by Group (Healthy vs Cancer) and Genes are clustered by biological pattern."
+        if is_exploratory: cap = "No DEGs found. Showing top variance genes to visualize data structure and sample heterogeneity."
+        
+        self._save_fig("Fig4_Heatmap", "DEG Expression Heatmap", cap)
         plt.close('all')
         
         # Store for downstream and report data parsing
@@ -427,14 +436,21 @@ class MasterBioinfoPipeline:
         plt.legend()
         self._save_fig("Fig5a_Lasso_CV", "L1-Logistic CV", "Cross-validation to select regularization strength C.")
 
-        # 系数条形图（取绝对值最大的若干基因）
-        coef_series = pd.Series(l1_logistic.coef_.ravel(), index=X.columns).abs().sort_values(ascending=False).head(15)
-        plt.figure(figsize=(8, 6))
-        plt.barh(range(len(coef_series)), coef_series.values, color='#4DBBD5', alpha=0.8)
-        plt.yticks(range(len(coef_series)), coef_series.index)
-        plt.title("L1-Logistic: Top Coefficients (|weight|)")
-        plt.xlabel("|Coefficient|")
-        self._save_fig("Fig5b_Lasso_Path", "L1 Coefficient Weights", "Top genes selected by L1 (sparse) logistic regression.")
+        # 系数条形图（取绝对值最大的若干基因，剔除 0 权重基因，且从大到小排列）
+        coef_raw = pd.Series(l1_logistic.coef_.ravel(), index=X.columns)
+        # 只保留系数绝对值大于极小阈值的基因，并按绝对值从大到小排序
+        coef_series = coef_raw[coef_raw.abs() > 1e-6].abs().sort_values(ascending=True).tail(15) 
+        
+        if not coef_series.empty:
+            plt.figure(figsize=(8, 7))
+            plt.barh(range(len(coef_series)), coef_series.values, color='#4DBBD5', alpha=0.8)
+            plt.yticks(range(len(coef_series)), coef_series.index)
+            plt.title("L1-Logistic: Top Valid Biomarkers (Weight Order)")
+            plt.xlabel("|Coefficient Weight|")
+            plt.grid(axis='x', linestyle='--', alpha=0.3)
+            self._save_fig("Fig5b_Lasso_Path", "L1 Coefficient Weights", "Ranking of top informative genes with non-zero L1 weights.")
+        else:
+            print("  [!] No non-zero coefficients found for L1-Logistic.")
 
         # --- Method 2: Random Forest ---
         print("  [*] Running Random Forest...")
@@ -651,8 +667,8 @@ class MasterBioinfoPipeline:
             f.write("| 项目 | 数值 |\n|------|------|\n")
             f.write(f"| 表达矩阵基因数 | {dea.get('n_genes', '-')} |\n")
             f.write(f"| 样本总数 | {dea.get('n_samples', '-')} |\n")
-            f.write(f"| Healthy/低风险组样本数 | {dea.get('n_healthy', '-')} |\n")
-            f.write(f"| Cancer/高风险组样本数 | {dea.get('n_cancer', '-')} |\n")
+            f.write(f"| 广谱对照组 (Healthy/Control/WT) 样本数 | {dea.get('n_healthy', '-')} |\n")
+            f.write(f"| 广谱实验组 (Disease/Treatment/Cancer) 样本数 | {dea.get('n_cancer', '-')} |\n")
             f.write(f"| 差异表达基因总数 (DEG) | {dea.get('n_sig', '-')} |\n")
             f.write(f"| 上调基因数 | {dea.get('n_up', '-')} |\n")
             f.write(f"| 下调基因数 | {dea.get('n_down', '-')} |\n")
