@@ -521,19 +521,22 @@ class MasterBioinfoPipeline:
 
     def run_enrichment(self):
         print(f"[7/9] High-Fidelity Functional Enrichment (GO/KEGG)...")
-        if self.res_df is None: return
+        if self.res_df is None: 
+            print("  [!] Error: Result dataframe is empty. Cannot run enrichment.")
+            return
         
-        # CRITICAL FIX: Sort by P-value first so top genes are actually significant
-        sorted_res = self.res_df.sort_values('pvalue')
+        # 严格提取统计学显著的差异基因 (Adjusted P < 0.05)
+        up_genes = self.res_df[self.res_df['Sig'] == 'Up'].index.tolist()
+        down_genes = self.res_df[self.res_df['Sig'] == 'Down'].index.tolist()
         
-        up_genes = sorted_res[sorted_res['Sig'] == 'Up'].index.tolist()[:300]
-        down_genes = sorted_res[sorted_res['Sig'] == 'Down'].index.tolist()[:300]
-        
-        if len(up_genes) + len(down_genes) < 5:
-            print("  [!] Insufficient DEGs for enrichment.")
+        total_degs = len(up_genes) + len(down_genes)
+        if total_degs < 5:
+            print(f"  [!] 显著差异基因不足 ({total_degs}个)，未达到富集分析的稳健性要求。")
+            print("  [💡] 科学建议：请尝试在设置中放宽 [P-value] 阈值，或检查样本分组是否正确。")
             return
 
         import gseapy as gp
+        print(f"  [*] 正在对 {len(up_genes)} 个上调基因和 {len(down_genes)} 个下调基因执行功能识别...")
         
         def plot_bubbles(enr_res, title, filename, caption):
             if enr_res is None or enr_res.results.empty: return

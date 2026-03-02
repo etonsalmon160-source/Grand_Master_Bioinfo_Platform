@@ -9,8 +9,8 @@ import threading
 import streamlit.components.v1 as components
 import re
 
-from engine.master_bioinfo_suite import MasterBioinfoPipeline
-from engine.custom_geo_parser import fetch_real_geo_matrix_with_genes
+from master_bioinfo_suite import MasterBioinfoPipeline
+from custom_geo_parser import fetch_real_geo_matrix_with_genes
 
 # GSE 编号正则
 GSE_PATTERN = re.compile(r"GSE\d+", re.IGNORECASE)
@@ -176,8 +176,9 @@ def main():
             st.markdown("<div class='premium-card'>", unsafe_allow_html=True)
             st.markdown("#### 📁 数据流注入 (Data Source)")
             geo_input = st.text_area("输入 GSE 编号 (多编号空格分隔)", placeholder="e.g. GSE31210 GSE30219", height=80)
+            use_soft = st.toggle("🔍 深度临床挖掘 (拉取 SOFT 文件)", value=False, help="开启后将下载完整 SOFT 家族包，耗时增加但可提取分期、突变、年龄等极细粒度标签。")
             
-            def trigger_analysis(input_txt, is_nl=False, p_thresh=0.05, fc_thresh=1.0, p_type='padj'):
+            def trigger_analysis(input_txt, is_nl=False, p_thresh=0.05, fc_thresh=1.0, p_type='padj', use_soft=False):
                 st.session_state.analyzing = True
                 hard_reset_log()
                 add_log(f"任务启动指令收到: {input_txt}")
@@ -189,7 +190,7 @@ def main():
                     except: pass
                 os.makedirs(out_dir, exist_ok=True)
 
-                def background_analysis(text, is_natural_language, p_thresh, fc_thresh, p_type):
+                def background_analysis(text, is_natural_language, p_thresh, fc_thresh, p_type, use_soft):
                     try:
                         target_gses = parse_gse_from_text(text, api_url=api_url, api_key=api_key) if is_natural_language else text.strip().split()
                         if not target_gses:
@@ -200,7 +201,7 @@ def main():
                         add_log(f"📡 已锁定计算目标: {target_gse}")
                         add_log(f"📡 正在从 NCBI 数据库下载 {target_gse} (此步耗时由国际宽带决定)...")
                         
-                        counts, meta = fetch_real_geo_matrix_with_genes(target_gse)
+                        counts, meta = fetch_real_geo_matrix_with_genes(target_gse, use_soft=use_soft)
                         add_log(f"✅ 数据解析成功: {counts.shape[0]} 探针 x {counts.shape[1]} 样本")
                         
                         # 暴露数据为原始 CSV
@@ -234,7 +235,7 @@ def main():
                     except Exception as e:
                         add_log(f"[ERROR] 运行中断: {str(e)}", "ERROR")
 
-                thread = threading.Thread(target=background_analysis, args=(input_txt, is_nl, p_thresh, fc_thresh, p_type))
+                thread = threading.Thread(target=background_analysis, args=(input_txt, is_nl, p_thresh, fc_thresh, p_type, use_soft))
                 thread.daemon = True
                 thread.start()
 
@@ -243,13 +244,13 @@ def main():
                 if st.button("🔥 标准 GSE 启动", use_container_width=True, help="直接输入 GSE 号进行精准分析"):
                     if not geo_input: st.warning("⚠️ 请输入正确的 GSE 编号！")
                     else:
-                        trigger_analysis(geo_input, is_nl=False, p_thresh=p_val, fc_thresh=fc_val, p_type=p_type)
+                        trigger_analysis(geo_input, is_nl=False, p_thresh=p_val, fc_thresh=fc_val, p_type=p_type, use_soft=use_soft)
                         st.rerun()
             with col_btn2:
                 if st.button("🧠 语义分析启动", use_container_width=True, help="使用自然语言描述你的需求 (如: '帮我分析肺腺癌数据')"):
                     if not geo_input: st.warning("⚠️ 请输入你的分析需求！")
                     else:
-                        trigger_analysis(geo_input, is_nl=True, p_thresh=p_val, fc_thresh=fc_val, p_type=p_type)
+                        trigger_analysis(geo_input, is_nl=True, p_thresh=p_val, fc_thresh=fc_val, p_type=p_type, use_soft=use_soft)
                         st.rerun()
             st.markdown("</div>", unsafe_allow_html=True) 
 
@@ -323,29 +324,16 @@ def main():
         else: st.warning("暂无分析结果图，请在 Jobs 选项卡启动任务。")
 
     with t3:
-        st.info("💡 GitHub Discussions: 欢迎提出新问题或 Bug Report (登录 GitHub 参与互动)。")
-        components.html(
-            """
-            <script src="https://giscus.app/client.js"
-                data-repo="etonsalmon160-source/Grand_Master_Bioinfo_Platform"
-                data-repo-id="R_kgDONzJIfg"
-                data-category="Announcements"
-                data-category-id="DIC_kwDONzJIfs4Cmosk"
-                data-mapping="pathname"
-                data-strict="0"
-                data-reactions-enabled="1"
-                data-emit-metadata="0"
-                data-input-position="bottom"
-                data-theme="dark"
-                data-lang="zh-CN"
-                data-loading="lazy"
-                crossorigin="anonymous"
-                async>
-            </script>
-            """,
-            height=600,
-            scrolling=True
-        )
+        st.markdown("<div style='background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(30, 31, 46, 0.5)); padding: 40px; border-radius: 20px; border: 1px solid rgba(56, 189, 248, 0.2); text-align: center; margin-top: 20px;'>", unsafe_allow_html=True)
+        st.markdown("<h2 style='color: #38bdf8; margin-bottom: 10px;'>🌐 OpenClaw 物种起源 / 讨论中心</h2>", unsafe_allow_html=True)
+        st.markdown("<p style='color: #94a3b8; font-size: 1.1rem; margin-bottom: 30px;'>由于内嵌限制，请点击下方按钮进入专属讨论区。<br>在这里，你可以反馈 Bug、分享生信发现、或与全球开发者互动。</p>", unsafe_allow_html=True)
+        
+        forum_url = "https://github.com/etonsalmon160-source/Grand_Master_Bioinfo_Platform/discussions"
+        st.link_button("🚀 开启 GitHub Discussions 直门", forum_url, use_container_width=True, type="primary")
+        
+        st.markdown("<div style='margin-top: 40px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 20px;'>", unsafe_allow_html=True)
+        st.caption("提示：你可以登录 GitHub 账号，在页面中点击 'New Discussion' 发表你的见解。")
+        st.markdown("</div></div>", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
