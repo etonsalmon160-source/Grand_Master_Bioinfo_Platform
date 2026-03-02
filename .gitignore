@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.env
+
+# Build Artifacts
+build/
+dist/
+*.spec
+*.exe
+
+# Analysis Results
+*_Results/
+OpenClaw_Compute_Cache/
+OpenClaw_Final_Reports/
+Web_Analysis_Output/
+
+# Data
+*.csv
+*.txt
+*.tsv
+!requirements.txt
+
+# OS
+.DS_Store
+Thumbs.db

@@ -9,8 +9,8 @@ import threading
 import streamlit.components.v1 as components
 import re
 
-from master_bioinfo_suite import MasterBioinfoPipeline
-from custom_geo_parser import fetch_real_geo_matrix_with_genes
+from engine.master_bioinfo_suite import MasterBioinfoPipeline
+from engine.custom_geo_parser import fetch_real_geo_matrix_with_genes
 
 # GSE 编号正则
 GSE_PATTERN = re.compile(r"GSE\d+", re.IGNORECASE)
